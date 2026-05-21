@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Note } from '@/lib/types';
+import type { Note } from '@/types';
 
 export function useNotes(userId: string | undefined) {
   const [notes, setNotes] = useState<Note[]>([]);

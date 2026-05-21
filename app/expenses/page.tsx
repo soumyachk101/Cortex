@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { useExpenses } from '@/hooks/useExpenses';
-import { EXPENSE_CATEGORIES, CATEGORY_COLORS } from '@/lib/constants';
+import { EXPENSE_CATEGORIES, CATEGORY_COLORS } from '@/constants';
 import { Plus, Search, Filter, Download, X, Receipt } from 'lucide-react';
 
 export default function ExpensesPage() {

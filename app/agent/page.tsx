@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { GEMINI_MODELS } from '@/lib/constants';
+import { GEMINI_MODELS } from '@/constants';
 import { Send, Trash2, Bot, Sparkles } from 'lucide-react';
 
 interface Message { id: string; text: string; isUser: boolean; }

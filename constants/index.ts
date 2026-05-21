@@ -1,4 +1,4 @@
-import { GeminiModel } from './types';
+import { GeminiModel } from '@/types';
 
 export const EXPENSE_CATEGORIES = [
   'Food',

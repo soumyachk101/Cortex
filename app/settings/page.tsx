@@ -4,7 +4,7 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { GEMINI_MODELS, CURRENCIES } from '@/lib/constants';
+import { GEMINI_MODELS, CURRENCIES } from '@/constants';
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Key, Bot, Wallet, Info, Check } from 'lucide-react';
 

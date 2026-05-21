@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import type { Reminder } from '@/lib/types';
+import type { Reminder } from '@/types';
 
 export function useReminders(userId: string | undefined) {
   const [reminders, setReminders] = useState<Reminder[]>([]);

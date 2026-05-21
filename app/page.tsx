@@ -7,7 +7,7 @@ import { AppShell } from '@/components/layout/app-shell';
 import { useExpenses } from '@/hooks/useExpenses';
 import { useTasks } from '@/hooks/useTasks';
 import { useNotes } from '@/hooks/useNotes';
-import { CATEGORY_COLORS, EXPENSE_CATEGORIES } from '@/lib/constants';
+import { CATEGORY_COLORS, EXPENSE_CATEGORIES } from '@/constants';
 import { StickyNote, Receipt, CheckSquare, TrendingUp, Sun, Moon } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useTheme } from 'next-themes';
