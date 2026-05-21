@@ -4,47 +4,120 @@
 
 @layer base {
   :root {
-    --accent: #6366F1;
-    --accent-light: #A5B4FC;
-    --accent-dark: #4F46E5;
+    --color-alabaster: #F9F8F4;
+    --color-forest: #2D3A31;
+    --color-sage: #8C9A84;
+    --color-clay: #DCCFC2;
+    --color-stone: #E6E2DA;
+    --color-terracotta: #C27B66;
+    --color-cream: #F2F0EB;
   }
 
   body {
-    @apply bg-bg-light text-text-primary dark:bg-bg-dark dark:text-text-primary-dark;
+    @apply bg-alabaster text-forest font-sans antialiased;
+  }
+
+  ::selection {
+    @apply bg-sage/20 text-forest;
   }
 }
 
 @layer components {
-  .gradient-accent {
-    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  /* Botanical Button Styles */
+  .btn-botanical {
+    @apply inline-flex items-center justify-center px-8 py-3.5
+           bg-forest text-white rounded-full
+           text-sm font-medium tracking-widest uppercase
+           transition-all duration-300 ease-out
+           hover:bg-forest/90 hover:shadow-botanical-md
+           focus:outline-none focus:ring-2 focus:ring-sage focus:ring-offset-2 focus:ring-offset-alabaster
+           active:scale-[0.98];
+  }
+
+  .btn-botanical-secondary {
+    @apply inline-flex items-center justify-center px-8 py-3.5
+           bg-transparent text-sage border border-sage rounded-full
+           text-sm font-medium tracking-widest uppercase
+           transition-all duration-300 ease-out
+           hover:bg-sage/10 hover:shadow-botanical
+           focus:outline-none focus:ring-2 focus:ring-sage focus:ring-offset-2 focus:ring-offset-alabaster;
+  }
+
+  .btn-botanical-terracotta {
+    @apply inline-flex items-center justify-center px-8 py-3.5
+           bg-terracotta text-white rounded-full
+           text-sm font-medium tracking-widest uppercase
+           transition-all duration-300 ease-out
+           hover:bg-terracotta/90 hover:shadow-botanical-md
+           focus:outline-none focus:ring-2 focus:ring-terracotta focus:ring-offset-2;
+  }
+
+  /* Botanical Card */
+  .card-botanical {
+    @apply bg-white rounded-card border border-stone/50
+           shadow-botanical
+           transition-all duration-500 ease-out
+           hover:-translate-y-1 hover:shadow-botanical-lg;
+  }
+
+  .card-botanical-flat {
+    @apply bg-cream rounded-card border border-stone/30
+           transition-all duration-500 ease-out;
+  }
+
+  /* Botanical Input */
+  .input-botanical {
+    @apply w-full px-5 py-3.5
+           bg-cream border border-stone/50 rounded-full
+           text-forest placeholder:text-mushroom
+           focus:outline-none focus:border-sage focus:ring-2 focus:ring-sage/20
+           transition-all duration-300;
+  }
+
+  /* Botanical Section */
+  .section-botanical {
+    @apply py-16 md:py-24 lg:py-32;
+  }
+
+  /* Paper Grain Texture */
+  .paper-grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 400 400' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)'/%3E%3C/svg%3E");
+    background-repeat: repeat;
+  }
+
+  /* Gradient overlays */
+  .gradient-botanical {
+    background: linear-gradient(135deg, #8C9A84 0%, #2D3A31 100%);
   }
 
   .gradient-warm {
-    background: linear-gradient(135deg, #F59E0B, #EF4444);
+    background: linear-gradient(135deg, #C27B66 0%, #DCCFC2 100%);
   }
 
-  .gradient-cool {
-    background: linear-gradient(135deg, #06B6D4, #3B82F6);
+  .gradient-earth {
+    background: linear-gradient(180deg, #F9F8F4 0%, #F2F0EB 100%);
   }
 
-  .gradient-green {
-    background: linear-gradient(135deg, #10B981, #059669);
+  /* Decorative vine line */
+  .vine-line {
+    @apply w-px h-16 bg-gradient-to-b from-transparent via-sage/30 to-transparent;
+  }
+}
+
+@layer utilities {
+  /* Staggered grid children */
+  .stagger-grid > *:nth-child(even) {
+    @apply md:translate-y-12;
   }
 
-  .card {
-    @apply bg-surface-light dark:bg-surface-dark rounded-card border border-border-light dark:border-border-dark;
+  /* Italic emphasis for serif */
+  .serif-emphasis {
+    @apply font-serif italic text-sage;
   }
 
-  .input {
-    @apply w-full px-4 py-3 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all;
-  }
-
-  .btn-primary {
-    @apply px-6 py-3 gradient-accent text-white rounded-xl font-medium hover:opacity-90 transition-opacity shadow-lg shadow-accent/25;
-  }
-
-  .btn-ghost {
-    @apply px-4 py-2 text-text-secondary dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors;
+  /* Organic blob shape */
+  .blob-shape {
+    border-radius: 60% 40% 30% 70% / 60% 30% 70% 40%;
   }
 }
 
@@ -54,9 +127,14 @@
 }
 
 ::-webkit-scrollbar-track {
-  background: transparent;
+  background: var(--color-alabaster);
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-border-light dark:bg-border-dark rounded-full;
+  background: var(--color-stone);
+  border-radius: 100px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-sage);
 }

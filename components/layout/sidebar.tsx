@@ -9,6 +9,7 @@ import {
   Bot,
   Settings,
   LogOut,
+  Leaf,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
@@ -23,44 +24,58 @@ export function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden md:flex flex-col w-64 h-screen fixed left-0 top-0 bg-surface-light dark:bg-surface-dark border-r border-border-light dark:border-border-dark">
+    <aside className="hidden md:flex flex-col w-72 h-screen fixed left-0 top-0 bg-white border-r border-stone/50">
       {/* Logo */}
-      <div className="p-6">
-        <h1 className="text-2xl font-bold bg-gradient-to-r from-accent to-purple-500 bg-clip-text text-transparent">
+      <div className="p-8 flex items-center gap-3">
+        <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center">
+          <Leaf size={20} className="text-sage" strokeWidth={1.5} />
+        </div>
+        <h1 className="font-serif text-2xl font-semibold text-forest">
           Cortex
         </h1>
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-3 space-y-1">
+      <nav className="flex-1 px-4 space-y-1">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl transition-all ${
+              className={`flex items-center gap-4 px-5 py-3.5 rounded-2xl transition-all duration-300 ease-out group ${
                 isActive
-                  ? 'bg-accent/10 text-accent font-medium'
-                  : 'text-text-secondary dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-gray-800'
+                  ? 'bg-sage/10 text-forest font-medium'
+                  : 'text-text-secondary hover:bg-cream hover:text-forest'
               }`}
             >
-              <item.icon size={20} />
-              <span>{item.label}</span>
+              <item.icon
+                size={20}
+                strokeWidth={1.5}
+                className={`transition-colors duration-300 ${
+                  isActive ? 'text-sage' : 'text-mushroom group-hover:text-sage'
+                }`}
+              />
+              <span className="tracking-wide">{item.label}</span>
             </Link>
           );
         })}
       </nav>
 
+      {/* Decorative vine */}
+      <div className="px-8">
+        <div className="vine-line mx-auto" />
+      </div>
+
       {/* Logout */}
-      <div className="p-3">
+      <div className="p-4">
         <form action="/auth/signout" method="post">
           <button
             type="submit"
-            className="flex items-center gap-3 px-4 py-3 rounded-xl w-full text-text-secondary dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
+            className="flex items-center gap-4 px-5 py-3.5 rounded-2xl w-full text-text-secondary hover:bg-cream hover:text-forest transition-all duration-300 group"
           >
-            <LogOut size={20} />
-            <span>Sign Out</span>
+            <LogOut size={20} strokeWidth={1.5} className="text-mushroom group-hover:text-terracotta transition-colors duration-300" />
+            <span className="tracking-wide">Sign Out</span>
           </button>
         </form>
       </div>

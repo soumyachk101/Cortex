@@ -6,7 +6,7 @@ const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
     <div
       ref={ref}
       className={cn(
-        'bg-surface-light dark:bg-surface-dark rounded-card border border-border-light dark:border-border-dark',
+        'bg-white rounded-card border border-stone/50 shadow-botanical transition-all duration-500 ease-out hover:-translate-y-1 hover:shadow-botanical-lg',
         className
       )}
       {...props}
@@ -14,6 +14,17 @@ const Card = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   )
 );
 Card.displayName = 'Card';
+
+const CardFlat = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
+  ({ className, ...props }, ref) => (
+    <div
+      ref={ref}
+      className={cn('bg-cream rounded-card border border-stone/30', className)}
+      {...props}
+    />
+  )
+);
+CardFlat.displayName = 'CardFlat';
 
 const CardHeader = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
   ({ className, ...props }, ref) => (
@@ -36,4 +47,4 @@ const CardFooter = forwardRef<HTMLDivElement, HTMLAttributes<HTMLDivElement>>(
 );
 CardFooter.displayName = 'CardFooter';
 
-export { Card, CardHeader, CardContent, CardFooter };
+export { Card, CardFlat, CardHeader, CardContent, CardFooter };

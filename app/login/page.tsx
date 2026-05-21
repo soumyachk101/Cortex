@@ -4,6 +4,7 @@ export const dynamic = 'force-dynamic';
 import { useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
+import { Leaf } from 'lucide-react';
 
 export default function LoginPage() {
   const [email, setEmail] = useState('');
@@ -23,7 +24,6 @@ export default function LoginPage() {
       const { error } = await supabase.auth.signUp({ email, password });
       if (error) setError(error.message);
       else {
-        // Create default settings
         const { data: { user } } = await supabase.auth.getUser();
         if (user) {
           await supabase.from('user_settings').insert({ user_id: user.id });
@@ -47,49 +47,54 @@ export default function LoginPage() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-bg-light dark:bg-bg-dark p-4">
+    <div className="min-h-screen flex items-center justify-center bg-alabaster p-4">
       <div className="w-full max-w-md">
         {/* Logo */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold bg-gradient-to-r from-accent to-purple-500 bg-clip-text text-transparent">
-            Cortex
-          </h1>
-          <p className="text-text-secondary dark:text-text-secondary-dark mt-2">
+        <div className="text-center mb-10">
+          <div className="inline-flex items-center gap-3 mb-4">
+            <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center">
+              <Leaf size={24} className="text-sage" strokeWidth={1.5} />
+            </div>
+            <h1 className="font-serif text-4xl font-semibold text-forest">
+              Cortex
+            </h1>
+          </div>
+          <p className="text-text-secondary text-base">
             Personal finance & productivity
           </p>
         </div>
 
         {/* Card */}
-        <div className="card p-8">
-          <h2 className="text-xl font-bold mb-6">
-            {isSignUp ? 'Create Account' : 'Sign In'}
+        <div className="bg-white rounded-card shadow-botanical-md border border-stone/50 p-8 md:p-10">
+          <h2 className="font-serif text-2xl font-semibold text-forest mb-8">
+            {isSignUp ? 'Create Account' : 'Welcome Back'}
           </h2>
 
           {error && (
-            <div className="mb-4 p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-xl text-red-600 dark:text-red-400 text-sm">
+            <div className="mb-6 p-4 bg-terracotta/5 border border-terracotta/20 rounded-2xl text-terracotta text-sm">
               {error}
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-5">
             <div>
-              <label className="block text-sm font-medium mb-1.5">Email</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2 tracking-wide">Email</label>
               <input
                 type="email"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="input"
+                className="input-botanical"
                 placeholder="you@example.com"
                 required
               />
             </div>
             <div>
-              <label className="block text-sm font-medium mb-1.5">Password</label>
+              <label className="block text-sm font-medium text-text-secondary mb-2 tracking-wide">Password</label>
               <input
                 type="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="input"
+                className="input-botanical"
                 placeholder="••••••••"
                 required
                 minLength={6}
@@ -98,21 +103,21 @@ export default function LoginPage() {
             <button
               type="submit"
               disabled={loading}
-              className="btn-primary w-full disabled:opacity-50"
+              className="btn-botanical w-full mt-2"
             >
-              {loading ? 'Loading...' : isSignUp ? 'Sign Up' : 'Sign In'}
+              {loading ? 'Loading...' : isSignUp ? 'Create Account' : 'Sign In'}
             </button>
           </form>
 
-          <div className="my-6 flex items-center gap-3">
-            <div className="flex-1 h-px bg-border-light dark:bg-border-dark" />
-            <span className="text-sm text-text-secondary dark:text-text-secondary-dark">or</span>
-            <div className="flex-1 h-px bg-border-light dark:bg-border-dark" />
+          <div className="my-8 flex items-center gap-4">
+            <div className="flex-1 h-px bg-stone" />
+            <span className="text-sm text-mushroom tracking-wide">or</span>
+            <div className="flex-1 h-px bg-stone" />
           </div>
 
           <button
             onClick={signInWithGoogle}
-            className="w-full px-4 py-3 border border-border-light dark:border-border-dark rounded-xl flex items-center justify-center gap-3 hover:bg-gray-50 dark:hover:bg-gray-800 transition-colors"
+            className="btn-botanical-secondary w-full flex items-center justify-center gap-3"
           >
             <svg width="18" height="18" viewBox="0 0 24 24">
               <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 0 1-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z"/>
@@ -123,11 +128,11 @@ export default function LoginPage() {
             Continue with Google
           </button>
 
-          <p className="mt-6 text-center text-sm text-text-secondary dark:text-text-secondary-dark">
+          <p className="mt-8 text-center text-sm text-text-secondary">
             {isSignUp ? 'Already have an account?' : "Don't have an account?"}{' '}
             <button
               onClick={() => setIsSignUp(!isSignUp)}
-              className="text-accent font-medium hover:underline"
+              className="text-sage font-medium hover:text-terracotta transition-colors duration-300"
             >
               {isSignUp ? 'Sign In' : 'Sign Up'}
             </button>

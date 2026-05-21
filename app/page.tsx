@@ -8,7 +8,7 @@ import { useExpenses } from '@/hooks/useExpenses';
 import { useTasks } from '@/hooks/useTasks';
 import { useNotes } from '@/hooks/useNotes';
 import { CATEGORY_COLORS, EXPENSE_CATEGORIES } from '@/constants';
-import { StickyNote, Receipt, CheckSquare, TrendingUp, Sun, Moon } from 'lucide-react';
+import { StickyNote, Receipt, CheckSquare, TrendingUp, Sun, Moon, Leaf, ChevronLeft, ChevronRight } from 'lucide-react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from 'recharts';
 import { useTheme } from 'next-themes';
 
@@ -48,76 +48,142 @@ export default function DashboardPage() {
   const chartData = Object.entries(byCategory).map(([name, value]) => ({ name, value }));
   const activeCount = activeTasks.filter(t => !t.is_completed).length;
 
+  const stats = [
+    { icon: Receipt, label: 'Transactions', value: monthlyExpenses.length },
+    { icon: CheckSquare, label: 'Active Tasks', value: activeCount },
+    { icon: StickyNote, label: 'Notes', value: notes.length },
+  ];
+
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-5xl mx-auto">
-        {/* Header */}
-        <div className="flex items-center justify-between mb-8">
-          <h1 className="text-2xl font-bold">Dashboard</h1>
-          <button onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')} className="p-2 rounded-xl hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors">
-            {theme === 'dark' ? <Sun size={20} /> : <Moon size={20} />}
+      <div className="px-6 md:px-12 lg:px-16 py-12 md:py-16 max-w-6xl mx-auto">
+
+        {/* ── Header ── */}
+        <div className="flex items-center justify-between mb-16">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center">
+              <Leaf size={22} strokeWidth={1.5} className="text-sage" />
+            </div>
+            <h1 className="font-serif text-4xl md:text-5xl font-semibold text-forest tracking-tight">
+              Dashboard
+            </h1>
+          </div>
+          <button
+            onClick={() => setTheme(theme === 'dark' ? 'light' : 'dark')}
+            className="w-11 h-11 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-mushroom hover:text-forest hover:border-sage/50 transition-all duration-300"
+          >
+            {theme === 'dark' ? <Sun size={18} strokeWidth={1.5} /> : <Moon size={18} strokeWidth={1.5} />}
           </button>
         </div>
 
-        {/* Month selector */}
-        <div className="card flex items-center justify-between p-4 mb-6">
-          <button onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg">←</button>
-          <span className="font-semibold">{selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}</span>
-          <button onClick={() => !isCurrentMonth && setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))} disabled={isCurrentMonth} className="p-2 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-lg disabled:opacity-30">→</button>
+        {/* ── Month Selector ── */}
+        <div className="flex items-center justify-center gap-6 mb-12">
+          <button
+            onClick={() => setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() - 1))}
+            className="w-10 h-10 rounded-full bg-white border border-stone/50 flex items-center justify-center text-text-secondary hover:text-forest hover:border-sage/50 transition-all duration-300 shadow-botanical"
+          >
+            <ChevronLeft size={18} strokeWidth={1.5} />
+          </button>
+          <span className="font-serif text-xl text-forest min-w-[200px] text-center">
+            {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+          </span>
+          <button
+            onClick={() => !isCurrentMonth && setSelectedMonth(new Date(selectedMonth.getFullYear(), selectedMonth.getMonth() + 1))}
+            disabled={isCurrentMonth}
+            className="w-10 h-10 rounded-full bg-white border border-stone/50 flex items-center justify-center text-text-secondary hover:text-forest hover:border-sage/50 transition-all duration-300 shadow-botanical disabled:opacity-30 disabled:cursor-not-allowed"
+          >
+            <ChevronRight size={18} strokeWidth={1.5} />
+          </button>
         </div>
 
-        {/* Balance card */}
-        <div className="gradient-accent rounded-2xl p-6 text-white mb-6 shadow-lg shadow-accent/25">
-          <p className="text-white/80 text-sm">Total Spent</p>
-          <p className="text-4xl font-bold mt-1">{currency}{totalSpent.toFixed(0)}</p>
+        {/* ── Balance Card ── */}
+        <div className="gradient-botanical rounded-card p-8 md:p-10 text-white mb-12 shadow-botanical-xl relative overflow-hidden">
+          {/* Decorative circle */}
+          <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/5" />
+          <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
+
+          <p className="text-white/70 text-sm tracking-widest uppercase font-medium">Total Spent</p>
+          <p className="font-serif text-5xl md:text-6xl font-bold mt-3 tracking-tight">
+            {currency}{totalSpent.toFixed(0)}
+          </p>
           {budget > 0 && (
-            <div className="mt-4">
-              <div className="h-1.5 bg-white/20 rounded-full overflow-hidden">
-                <div className="h-full bg-white rounded-full transition-all" style={{ width: `${Math.min((totalSpent / budget) * 100, 100)}%` }} />
+            <div className="mt-8 max-w-xs">
+              <div className="h-1.5 bg-white/15 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-white/80 rounded-full transition-all duration-700 ease-out"
+                  style={{ width: `${Math.min((totalSpent / budget) * 100, 100)}%` }}
+                />
               </div>
-              <p className="text-white/70 text-xs mt-1">{currency}{budget.toFixed(0)} budget</p>
+              <p className="text-white/50 text-xs mt-2 tracking-wider">
+                {currency}{budget.toFixed(0)} budget
+              </p>
             </div>
           )}
         </div>
 
-        {/* Quick stats */}
-        <div className="grid grid-cols-3 gap-3 mb-6">
-          {[
-            { icon: Receipt, label: 'Transactions', value: monthlyExpenses.length, color: 'bg-accent/10 text-accent' },
-            { icon: CheckSquare, label: 'Active Tasks', value: activeCount, color: 'bg-emerald-500/10 text-emerald-500' },
-            { icon: StickyNote, label: 'Notes', value: notes.length, color: 'bg-amber-500/10 text-amber-500' },
-          ].map((s) => (
-            <div key={s.label} className="card p-4 text-center">
-              <div className={`w-10 h-10 rounded-xl ${s.color} flex items-center justify-center mx-auto mb-2`}>
-                <s.icon size={18} />
+        {/* ── Quick Stats ── */}
+        <div className="grid grid-cols-3 gap-4 md:gap-6 mb-12">
+          {stats.map((s, i) => (
+            <div
+              key={s.label}
+              className={`card-botanical-flat p-6 text-center ${i % 2 === 1 ? 'md:translate-y-3' : ''}`}
+            >
+              <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center mx-auto mb-4">
+                <s.icon size={20} strokeWidth={1.5} className="text-sage" />
               </div>
-              <p className="text-xl font-bold">{s.value}</p>
-              <p className="text-xs text-text-secondary dark:text-text-secondary-dark">{s.label}</p>
+              <p className="font-serif text-3xl font-semibold text-forest">{s.value}</p>
+              <p className="text-xs text-text-secondary mt-1 tracking-wider uppercase">{s.label}</p>
             </div>
           ))}
         </div>
 
-        {/* Category chart */}
+        {/* ── Category Chart ── */}
         {chartData.length > 0 && (
-          <div className="card p-6 mb-6">
-            <h2 className="font-semibold mb-4">Spending by Category</h2>
-            <div className="flex flex-col md:flex-row items-center gap-6">
-              <div className="w-48 h-48">
+          <div className="card-botanical p-8 mb-12">
+            <h2 className="font-serif text-2xl font-semibold text-forest mb-8">Spending by Category</h2>
+            <div className="flex flex-col md:flex-row items-center gap-10">
+              <div className="w-52 h-52">
                 <ResponsiveContainer>
                   <PieChart>
-                    <Pie data={chartData} dataKey="value" cx="50%" cy="50%" outerRadius={80} label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}>
-                      {chartData.map((_, i) => <Cell key={i} fill={Object.values(CATEGORY_COLORS)[i % Object.values(CATEGORY_COLORS).length]} />)}
+                    <Pie
+                      data={chartData}
+                      dataKey="value"
+                      cx="50%"
+                      cy="50%"
+                      outerRadius={85}
+                      innerRadius={40}
+                      strokeWidth={2}
+                      stroke="#F9F8F4"
+                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
+                    >
+                      {chartData.map((_, i) => (
+                        <Cell
+                          key={i}
+                          fill={Object.values(CATEGORY_COLORS)[i % Object.values(CATEGORY_COLORS).length]}
+                        />
+                      ))}
                     </Pie>
-                    <Tooltip formatter={(v: number) => `${currency}${v.toFixed(0)}`} />
+                    <Tooltip
+                      formatter={(v: number) => `${currency}${v.toFixed(0)}`}
+                      contentStyle={{
+                        borderRadius: '16px',
+                        border: '1px solid #E6E2DA',
+                        boxShadow: '0 10px 15px -3px rgba(45, 58, 49, 0.05)',
+                        fontFamily: '"Source Sans 3", sans-serif',
+                      }}
+                    />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex flex-wrap gap-3">
+              <div className="flex flex-wrap gap-x-6 gap-y-3">
                 {chartData.map((d, i) => (
-                  <div key={d.name} className="flex items-center gap-2 text-sm">
-                    <div className="w-3 h-3 rounded" style={{ backgroundColor: Object.values(CATEGORY_COLORS)[i % Object.values(CATEGORY_COLORS).length] }} />
-                    <span>{d.name}</span>
-                    <span className="text-text-secondary dark:text-text-secondary-dark">{currency}{d.value.toFixed(0)}</span>
+                  <div key={d.name} className="flex items-center gap-2.5 text-sm">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: Object.values(CATEGORY_COLORS)[i % Object.values(CATEGORY_COLORS).length] }}
+                    />
+                    <span className="text-forest">{d.name}</span>
+                    <span className="text-text-secondary">{currency}{d.value.toFixed(0)}</span>
                   </div>
                 ))}
               </div>
@@ -125,15 +191,15 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* AI Insights */}
-        <div className="rounded-2xl p-4 bg-accent/5 border border-accent/20 mb-6">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-              <TrendingUp size={18} className="text-accent" />
+        {/* ── AI Insights ── */}
+        <div className="rounded-card p-6 bg-sage/5 border border-sage/20 mb-12">
+          <div className="flex items-center gap-4">
+            <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center flex-shrink-0">
+              <Leaf size={20} strokeWidth={1.5} className="text-sage" />
             </div>
             <div>
-              <p className="font-semibold text-accent text-sm">AI Insights</p>
-              <p className="text-sm text-text-secondary dark:text-text-secondary-dark">
+              <p className="font-serif text-lg font-semibold text-sage">AI Insights</p>
+              <p className="text-sm text-text-secondary mt-1 leading-relaxed">
                 {chartData.length > 0
                   ? `Top spend: ${chartData.sort((a, b) => b.value - a.value)[0].name} (${currency}${chartData[0].value.toFixed(0)})`
                   : 'No expenses this month. Add one to get started!'}
@@ -142,22 +208,41 @@ export default function DashboardPage() {
           </div>
         </div>
 
-        {/* Recent transactions */}
-        <h2 className="font-semibold mb-3">Recent Transactions</h2>
-        <div className="space-y-2">
-          {monthlyExpenses.slice(0, 5).map((e) => (
-            <div key={e.id} className="card flex items-center gap-3 p-3">
-              <div className="w-10 h-10 rounded-xl flex items-center justify-center" style={{ backgroundColor: `${CATEGORY_COLORS[e.category as keyof typeof CATEGORY_COLORS] || '#64748B'}15` }}>
-                <Receipt size={16} style={{ color: CATEGORY_COLORS[e.category as keyof typeof CATEGORY_COLORS] || '#64748B' }} />
+        {/* ── Recent Transactions ── */}
+        <h2 className="font-serif text-2xl font-semibold text-forest mb-6">Recent Transactions</h2>
+        <div className="space-y-3">
+          {monthlyExpenses.slice(0, 5).map((e, i) => (
+            <div
+              key={e.id}
+              className="flex items-center gap-4 p-5 bg-white rounded-card border border-stone/30 hover:border-sage/30 hover:shadow-botanical transition-all duration-500 ease-out group"
+            >
+              <div
+                className="w-11 h-11 rounded-full flex items-center justify-center flex-shrink-0"
+                style={{ backgroundColor: `${CATEGORY_COLORS[e.category as keyof typeof CATEGORY_COLORS] || '#8C9A84'}12` }}
+              >
+                <Receipt
+                  size={18}
+                  strokeWidth={1.5}
+                  style={{ color: CATEGORY_COLORS[e.category as keyof typeof CATEGORY_COLORS] || '#8C9A84' }}
+                />
               </div>
               <div className="flex-1 min-w-0">
-                <p className="font-medium truncate">{e.title}</p>
-                <p className="text-xs text-text-secondary dark:text-text-secondary-dark">{e.category} · {new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</p>
+                <p className="font-medium text-forest truncate group-hover:text-sage transition-colors duration-300">{e.title}</p>
+                <p className="text-xs text-text-secondary mt-0.5 tracking-wide">
+                  {e.category} · {new Date(e.date).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                </p>
               </div>
-              <p className="font-semibold">{currency}{e.amount.toFixed(0)}</p>
+              <p className="font-serif text-lg font-semibold text-forest">
+                {currency}{e.amount.toFixed(0)}
+              </p>
             </div>
           ))}
-          {monthlyExpenses.length === 0 && <p className="text-text-secondary dark:text-text-secondary-dark text-sm text-center py-8">No expenses this month</p>}
+          {monthlyExpenses.length === 0 && (
+            <div className="text-center py-16">
+              <Receipt size={32} strokeWidth={1} className="text-stone mx-auto mb-4" />
+              <p className="text-text-secondary text-sm tracking-wide">No expenses this month</p>
+            </div>
+          )}
         </div>
       </div>
     </AppShell>

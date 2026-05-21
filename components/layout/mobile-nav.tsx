@@ -16,22 +16,22 @@ export function MobileNav() {
   const pathname = usePathname();
 
   return (
-    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-surface-light dark:bg-surface-dark border-t border-border-light dark:border-border-dark z-50">
-      <div className="flex justify-around items-center h-16">
+    <nav className="md:hidden fixed bottom-0 left-0 right-0 bg-white/90 backdrop-blur-md border-t border-stone/50 z-50">
+      <div className="flex justify-around items-center h-18 px-2">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
           return (
             <Link
               key={item.href}
               href={item.href}
-              className={`flex flex-col items-center gap-1 px-3 py-2 rounded-lg transition-colors ${
+              className={`flex flex-col items-center gap-1.5 px-3 py-2 rounded-xl transition-all duration-300 ${
                 isActive
-                  ? 'text-accent'
-                  : 'text-text-secondary dark:text-text-secondary-dark'
+                  ? 'text-sage'
+                  : 'text-mushroom'
               }`}
             >
-              <item.icon size={20} />
-              <span className="text-[10px] font-medium">{item.label}</span>
+              <item.icon size={20} strokeWidth={1.5} />
+              <span className="text-[10px] font-medium tracking-wider uppercase">{item.label}</span>
             </Link>
           );
         })}
