@@ -1,0 +1,62 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --accent: #6366F1;
+    --accent-light: #A5B4FC;
+    --accent-dark: #4F46E5;
+  }
+
+  body {
+    @apply bg-bg-light text-text-primary dark:bg-bg-dark dark:text-text-primary-dark;
+  }
+}
+
+@layer components {
+  .gradient-accent {
+    background: linear-gradient(135deg, #6366F1, #8B5CF6);
+  }
+
+  .gradient-warm {
+    background: linear-gradient(135deg, #F59E0B, #EF4444);
+  }
+
+  .gradient-cool {
+    background: linear-gradient(135deg, #06B6D4, #3B82F6);
+  }
+
+  .gradient-green {
+    background: linear-gradient(135deg, #10B981, #059669);
+  }
+
+  .card {
+    @apply bg-surface-light dark:bg-surface-dark rounded-card border border-border-light dark:border-border-dark;
+  }
+
+  .input {
+    @apply w-full px-4 py-3 bg-surface-light dark:bg-surface-dark border border-border-light dark:border-border-dark rounded-xl focus:outline-none focus:ring-2 focus:ring-accent focus:border-transparent transition-all;
+  }
+
+  .btn-primary {
+    @apply px-6 py-3 gradient-accent text-white rounded-xl font-medium hover:opacity-90 transition-opacity shadow-lg shadow-accent/25;
+  }
+
+  .btn-ghost {
+    @apply px-4 py-2 text-text-secondary dark:text-text-secondary-dark hover:bg-gray-100 dark:hover:bg-gray-800 rounded-xl transition-colors;
+  }
+}
+
+/* Scrollbar */
+::-webkit-scrollbar {
+  width: 6px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-border-light dark:bg-border-dark rounded-full;
+}
