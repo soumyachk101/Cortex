@@ -6,7 +6,7 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { GEMINI_MODELS, CURRENCIES } from '@/constants';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Key, Bot, Wallet, Info, Check } from 'lucide-react';
+import { Moon, Sun, Key, Bot, Wallet, Info, Check, Leaf, ChevronRight } from 'lucide-react';
 
 export default function SettingsPage() {
   const [userId, setUserId] = useState<string>();
@@ -45,112 +45,91 @@ export default function SettingsPage() {
 
   const currentModel = GEMINI_MODELS.find(m => m.id === settings.selected_model) || GEMINI_MODELS[0];
 
+  function SettingRow({ icon: Icon, iconBg, label, value, onClick }: { icon: any; iconBg: string; label: string; value: string; onClick: () => void }) {
+    return (
+      <button onClick={onClick} className="flex items-center justify-between p-5 w-full hover:bg-cream/50 transition-colors duration-300 group">
+        <div className="flex items-center gap-4">
+          <div className={`w-11 h-11 rounded-full ${iconBg} flex items-center justify-center`}>
+            <Icon size={18} strokeWidth={1.5} />
+          </div>
+          <div className="text-left">
+            <p className="font-medium text-forest">{label}</p>
+            <p className="text-sm text-mushroom mt-0.5">{value}</p>
+          </div>
+        </div>
+        <ChevronRight size={18} strokeWidth={1.5} className="text-mushroom group-hover:text-sage transition-colors duration-300" />
+      </button>
+    );
+  }
+
   return (
     <AppShell>
-      <div className="p-4 md:p-8 max-w-2xl mx-auto">
-        <h1 className="text-2xl font-bold mb-8">Settings</h1>
+      <div className="p-6 md:p-10 max-w-2xl mx-auto">
+        {/* Header */}
+        <div className="mb-10">
+          <h1 className="font-serif text-3xl md:text-4xl font-semibold text-forest">Settings</h1>
+          <p className="text-text-secondary mt-1 tracking-wide">Customize your experience</p>
+        </div>
 
         {/* Appearance */}
-        <h2 className="text-sm font-semibold text-accent mb-3 tracking-wide">APPEARANCE</h2>
-        <div className="card mb-6">
-          <div className="flex items-center justify-between p-4">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                {theme === 'dark' ? <Moon size={18} className="text-amber-500" /> : <Sun size={18} className="text-amber-500" />}
+        <h2 className="text-xs font-semibold text-sage mb-4 tracking-[0.2em] uppercase">Appearance</h2>
+        <div className="bg-white rounded-card border border-stone/50 mb-8 overflow-hidden">
+          <div className="flex items-center justify-between p-5">
+            <div className="flex items-center gap-4">
+              <div className="w-11 h-11 rounded-full bg-cream flex items-center justify-center">
+                {theme === 'dark' ? <Moon size={18} strokeWidth={1.5} className="text-forest" /> : <Sun size={18} strokeWidth={1.5} className="text-terracotta" />}
               </div>
               <div>
-                <p className="font-medium">Dark Mode</p>
-                <p className="text-sm text-text-secondary dark:text-text-secondary-dark">Switch between light and dark</p>
+                <p className="font-medium text-forest">Dark Mode</p>
+                <p className="text-sm text-mushroom mt-0.5">Switch between light and dark</p>
               </div>
             </div>
-            <button onClick={() => { const next = theme === 'dark' ? 'light' : 'dark'; setTheme(next); updateSetting('theme', next); }} className={`w-12 h-7 rounded-full relative transition-colors ${theme === 'dark' ? 'bg-accent' : 'bg-gray-300'}`}>
-              <div className={`w-5 h-5 bg-white rounded-full absolute top-1 transition-all ${theme === 'dark' ? 'left-6' : 'left-1'}`} />
+            <button onClick={() => { const next = theme === 'dark' ? 'light' : 'dark'; setTheme(next); updateSetting('theme', next); }} className={`w-14 h-8 rounded-full relative transition-colors duration-300 ${theme === 'dark' ? 'bg-sage' : 'bg-stone'}`}>
+              <div className={`w-6 h-6 bg-white rounded-full absolute top-1 transition-all duration-300 shadow-sm ${theme === 'dark' ? 'left-7' : 'left-1'}`} />
             </button>
           </div>
         </div>
 
         {/* Currency */}
-        <h2 className="text-sm font-semibold text-accent mb-3 tracking-wide">CURRENCY</h2>
-        <div className="card mb-6">
-          <button onClick={() => setShowCurrencyPicker(true)} className="flex items-center justify-between p-4 w-full">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-emerald-500/10 flex items-center justify-center">
-                <Wallet size={18} className="text-emerald-500" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">Currency Symbol</p>
-                <p className="text-sm text-text-secondary dark:text-text-secondary-dark">{settings.currency_symbol}</p>
-              </div>
-            </div>
-            <span className="text-text-secondary">→</span>
-          </button>
+        <h2 className="text-xs font-semibold text-sage mb-4 tracking-[0.2em] uppercase">Currency</h2>
+        <div className="bg-white rounded-card border border-stone/50 mb-8 overflow-hidden">
+          <SettingRow icon={Wallet} iconBg="bg-sage/10 text-sage" label="Currency Symbol" value={settings.currency_symbol} onClick={() => setShowCurrencyPicker(true)} />
         </div>
 
         {/* Budget */}
-        <h2 className="text-sm font-semibold text-accent mb-3 tracking-wide">BUDGET</h2>
-        <div className="card mb-6">
-          <button onClick={() => { setBudgetInput(settings.budget_limit > 0 ? settings.budget_limit.toString() : ''); setShowBudgetModal(true); }} className="flex items-center justify-between p-4 w-full">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-amber-500/10 flex items-center justify-center">
-                <Wallet size={18} className="text-amber-500" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">Monthly Budget Limit</p>
-                <p className="text-sm text-text-secondary dark:text-text-secondary-dark">{settings.budget_limit > 0 ? `${settings.currency_symbol}${settings.budget_limit}` : 'Not set'}</p>
-              </div>
-            </div>
-            <span className="text-text-secondary">→</span>
-          </button>
+        <h2 className="text-xs font-semibold text-sage mb-4 tracking-[0.2em] uppercase">Budget</h2>
+        <div className="bg-white rounded-card border border-stone/50 mb-8 overflow-hidden">
+          <SettingRow icon={Wallet} iconBg="bg-terracotta/10 text-terracotta" label="Monthly Budget Limit" value={settings.budget_limit > 0 ? `${settings.currency_symbol}${settings.budget_limit}` : 'Not set'} onClick={() => { setBudgetInput(settings.budget_limit > 0 ? settings.budget_limit.toString() : ''); setShowBudgetModal(true); }} />
         </div>
 
         {/* AI Agent */}
-        <h2 className="text-sm font-semibold text-accent mb-3 tracking-wide">AI AGENT</h2>
-        <div className="card mb-6">
-          <button onClick={() => { setApiKeyInput(settings.gemini_api_key || ''); setShowApiKeyModal(true); }} className="flex items-center justify-between p-4 w-full border-b border-border-light dark:border-border-dark">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-accent/10 flex items-center justify-center">
-                <Key size={18} className="text-accent" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">Gemini API Key</p>
-                <p className="text-sm text-text-secondary dark:text-text-secondary-dark">{settings.gemini_api_key ? `${settings.gemini_api_key.substring(0, 8)}...` : 'Not set'}</p>
-              </div>
-            </div>
-            <span className="text-text-secondary">→</span>
-          </button>
-          <button onClick={() => setShowModelPicker(true)} className="flex items-center justify-between p-4 w-full">
-            <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-xl bg-purple-500/10 flex items-center justify-center">
-                <Bot size={18} className="text-purple-500" />
-              </div>
-              <div className="text-left">
-                <p className="font-medium">AI Model</p>
-                <p className="text-sm text-text-secondary dark:text-text-secondary-dark">{currentModel.name}</p>
-              </div>
-            </div>
-            <span className="text-text-secondary">→</span>
-          </button>
+        <h2 className="text-xs font-semibold text-sage mb-4 tracking-[0.2em] uppercase">AI Agent</h2>
+        <div className="bg-white rounded-card border border-stone/50 mb-8 overflow-hidden">
+          <SettingRow icon={Key} iconBg="bg-sage/10 text-sage" label="Gemini API Key" value={settings.gemini_api_key ? `${settings.gemini_api_key.substring(0, 8)}...` : 'Not set'} onClick={() => { setApiKeyInput(settings.gemini_api_key || ''); setShowApiKeyModal(true); }} />
+          <div className="h-px bg-stone/50 mx-5" />
+          <SettingRow icon={Bot} iconBg="bg-clay/50 text-forest" label="AI Model" value={currentModel.name} onClick={() => setShowModelPicker(true)} />
         </div>
 
         {/* About */}
-        <h2 className="text-sm font-semibold text-accent mb-3 tracking-wide">ABOUT</h2>
-        <div className="card">
-          <div className="flex items-center gap-3 p-4 border-b border-border-light dark:border-border-dark">
-            <div className="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              <Info size={18} className="text-text-secondary" />
+        <h2 className="text-xs font-semibold text-sage mb-4 tracking-[0.2em] uppercase">About</h2>
+        <div className="bg-white rounded-card border border-stone/50 overflow-hidden">
+          <div className="flex items-center gap-4 p-5">
+            <div className="w-11 h-11 rounded-full bg-cream flex items-center justify-center">
+              <Info size={18} strokeWidth={1.5} className="text-mushroom" />
             </div>
             <div>
-              <p className="font-medium">Version</p>
-              <p className="text-sm text-text-secondary dark:text-text-secondary-dark">1.0.0</p>
+              <p className="font-medium text-forest">Version</p>
+              <p className="text-sm text-mushroom mt-0.5">1.0.0</p>
             </div>
           </div>
-          <div className="flex items-center gap-3 p-4">
-            <div className="w-10 h-10 rounded-xl bg-gray-200 dark:bg-gray-700 flex items-center justify-center">
-              <Bot size={18} className="text-text-secondary" />
+          <div className="h-px bg-stone/50 mx-5" />
+          <div className="flex items-center gap-4 p-5">
+            <div className="w-11 h-11 rounded-full bg-cream flex items-center justify-center">
+              <Bot size={18} strokeWidth={1.5} className="text-mushroom" />
             </div>
             <div>
-              <p className="font-medium">AI Status</p>
-              <p className="text-sm text-text-secondary dark:text-text-secondary-dark">{settings.gemini_api_key ? `Ready (${currentModel.name})` : 'Not configured'}</p>
+              <p className="font-medium text-forest">AI Status</p>
+              <p className="text-sm text-mushroom mt-0.5">{settings.gemini_api_key ? `Ready (${currentModel.name})` : 'Not configured'}</p>
             </div>
           </div>
         </div>
@@ -158,21 +137,21 @@ export default function SettingsPage() {
 
       {/* Model Picker Modal */}
       {showModelPicker && (
-        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50" onClick={() => setShowModelPicker(false)}>
-          <div className="bg-surface-light dark:bg-surface-dark w-full max-w-lg rounded-t-2xl md:rounded-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-border-light dark:bg-border-dark rounded-full mx-auto mb-4" />
-            <h2 className="text-lg font-bold mb-4">Select AI Model</h2>
-            <div className="space-y-2">
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowModelPicker(false)}>
+          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
+            <h2 className="font-serif text-2xl font-semibold text-forest mb-6">Select AI Model</h2>
+            <div className="space-y-2 max-h-[60vh] overflow-y-auto">
               {GEMINI_MODELS.map(m => (
-                <button key={m.id} onClick={() => { updateSetting('selected_model', m.id); setShowModelPicker(false); }} className={`w-full flex items-center gap-3 p-3 rounded-xl transition-colors ${m.id === settings.selected_model ? 'bg-accent/10 border border-accent/30' : 'hover:bg-gray-50 dark:hover:bg-gray-800'}`}>
-                  <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${m.id === settings.selected_model ? 'bg-accent/20' : 'bg-gray-200 dark:bg-gray-700'}`}>
-                    <Bot size={18} className={m.id === settings.selected_model ? 'text-accent' : 'text-text-secondary'} />
+                <button key={m.id} onClick={() => { updateSetting('selected_model', m.id); setShowModelPicker(false); }} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${m.id === settings.selected_model ? 'bg-sage/10 border border-sage/30' : 'hover:bg-cream'}`}>
+                  <div className={`w-11 h-11 rounded-full flex items-center justify-center ${m.id === settings.selected_model ? 'bg-sage/20' : 'bg-cream'}`}>
+                    <Bot size={18} strokeWidth={1.5} className={m.id === settings.selected_model ? 'text-sage' : 'text-mushroom'} />
                   </div>
                   <div className="text-left flex-1">
-                    <p className="font-medium">{m.name}</p>
-                    <p className="text-xs text-text-secondary dark:text-text-secondary-dark">{m.description}</p>
+                    <p className="font-medium text-forest">{m.name}</p>
+                    <p className="text-xs text-mushroom mt-0.5">{m.description}</p>
                   </div>
-                  {m.id === settings.selected_model && <Check size={18} className="text-accent" />}
+                  {m.id === settings.selected_model && <Check size={18} strokeWidth={1.5} className="text-sage" />}
                 </button>
               ))}
             </div>
@@ -182,13 +161,13 @@ export default function SettingsPage() {
 
       {/* Currency Picker Modal */}
       {showCurrencyPicker && (
-        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50" onClick={() => setShowCurrencyPicker(false)}>
-          <div className="bg-surface-light dark:bg-surface-dark w-full max-w-lg rounded-t-2xl md:rounded-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-border-light dark:bg-border-dark rounded-full mx-auto mb-4" />
-            <h2 className="text-lg font-bold mb-4">Currency Symbol</h2>
-            <div className="grid grid-cols-5 gap-2">
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowCurrencyPicker(false)}>
+          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
+            <h2 className="font-serif text-2xl font-semibold text-forest mb-6">Currency Symbol</h2>
+            <div className="grid grid-cols-5 gap-3">
               {CURRENCIES.map(c => (
-                <button key={c} onClick={() => { updateSetting('currency_symbol', c); setShowCurrencyPicker(false); }} className={`py-3 rounded-xl text-xl font-medium transition-all ${c === settings.currency_symbol ? 'bg-accent text-white' : 'bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-700'}`}>{c}</button>
+                <button key={c} onClick={() => { updateSetting('currency_symbol', c); setShowCurrencyPicker(false); }} className={`py-4 rounded-2xl text-xl font-serif font-medium transition-all duration-300 ${c === settings.currency_symbol ? 'bg-forest text-white shadow-botanical-md' : 'bg-cream text-forest hover:bg-stone/50'}`}>{c}</button>
               ))}
             </div>
           </div>
@@ -197,15 +176,15 @@ export default function SettingsPage() {
 
       {/* API Key Modal */}
       {showApiKeyModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50" onClick={() => setShowApiKeyModal(false)}>
-          <div className="bg-surface-light dark:bg-surface-dark w-full max-w-lg rounded-t-2xl md:rounded-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-border-light dark:bg-border-dark rounded-full mx-auto mb-4" />
-            <h2 className="text-lg font-bold mb-2">Gemini API Key</h2>
-            <p className="text-sm text-text-secondary dark:text-text-secondary-dark mb-4">Get your key from Google AI Studio</p>
-            <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)} className="input mb-4" placeholder="AIza..." />
-            <div className="flex gap-2">
-              <button onClick={() => setShowApiKeyModal(false)} className="btn-ghost flex-1">Cancel</button>
-              <button onClick={() => { updateSetting('gemini_api_key', apiKeyInput); setShowApiKeyModal(false); }} className="btn-primary flex-1">Save</button>
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowApiKeyModal(false)}>
+          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
+            <h2 className="font-serif text-2xl font-semibold text-forest mb-2">Gemini API Key</h2>
+            <p className="text-sm text-mushroom mb-6">Get your key from Google AI Studio</p>
+            <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)} className="input-botanical mb-6" placeholder="AIza..." />
+            <div className="flex gap-3">
+              <button onClick={() => setShowApiKeyModal(false)} className="btn-botanical-secondary flex-1">Cancel</button>
+              <button onClick={() => { updateSetting('gemini_api_key', apiKeyInput); setShowApiKeyModal(false); }} className="btn-botanical flex-1">Save</button>
             </div>
           </div>
         </div>
@@ -213,17 +192,17 @@ export default function SettingsPage() {
 
       {/* Budget Modal */}
       {showBudgetModal && (
-        <div className="fixed inset-0 bg-black/50 flex items-end md:items-center justify-center z-50" onClick={() => setShowBudgetModal(false)}>
-          <div className="bg-surface-light dark:bg-surface-dark w-full max-w-lg rounded-t-2xl md:rounded-2xl p-6" onClick={e => e.stopPropagation()}>
-            <div className="w-10 h-1 bg-border-light dark:bg-border-dark rounded-full mx-auto mb-4" />
-            <h2 className="text-lg font-bold mb-4">Monthly Budget</h2>
-            <div className="relative mb-4">
-              <span className="absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">{settings.currency_symbol}</span>
-              <input type="number" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} className="input pl-10" placeholder="0" />
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowBudgetModal(false)}>
+          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
+            <h2 className="font-serif text-2xl font-semibold text-forest mb-6">Monthly Budget</h2>
+            <div className="relative mb-6">
+              <span className="absolute left-5 top-1/2 -translate-y-1/2 text-mushroom">{settings.currency_symbol}</span>
+              <input type="number" value={budgetInput} onChange={e => setBudgetInput(e.target.value)} className="input-botanical pl-12" placeholder="0" />
             </div>
-            <div className="flex gap-2">
-              <button onClick={() => { updateSetting('budget_limit', 0); setShowBudgetModal(false); }} className="btn-ghost flex-1 text-red-500">Remove</button>
-              <button onClick={() => { const v = parseFloat(budgetInput); if (!isNaN(v) && v > 0) updateSetting('budget_limit', v); setShowBudgetModal(false); }} className="btn-primary flex-1">Save</button>
+            <div className="flex gap-3">
+              <button onClick={() => { updateSetting('budget_limit', 0); setShowBudgetModal(false); }} className="btn-botanical-secondary flex-1 text-terracotta border-terracotta/30 hover:bg-terracotta/5">Remove</button>
+              <button onClick={() => { const v = parseFloat(budgetInput); if (!isNaN(v) && v > 0) updateSetting('budget_limit', v); setShowBudgetModal(false); }} className="btn-botanical flex-1">Save</button>
             </div>
           </div>
         </div>
