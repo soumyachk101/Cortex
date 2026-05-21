@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="https://cortexgo.vercel.app/icon" width="80" height="80" alt="Cortex" style="border-radius: 50%;" />
+  <img src="https://img.shields.io/badge/-Cortex-8C9A84?style=for-the-badge&logo=leaf&logoColor=white" alt="Cortex" />
 </p>
 
 <h1 align="center">Cortex</h1>
