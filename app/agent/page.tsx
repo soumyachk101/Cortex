@@ -5,7 +5,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { ALL_MODELS } from '@/constants';
-import { Send, Trash2, Leaf, Sparkles, Copy, Check, Wallet, CheckSquare, BarChart3, StickyNote, Plus } from 'lucide-react';
+import { Send, Trash2, Sparkles, Copy, Check, Wallet, CheckSquare, BarChart3, StickyNote } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 
@@ -20,7 +20,7 @@ interface Message {
 const QUICK_ACTIONS = [
   { label: 'Add Expense', icon: Wallet, prompt: 'Add an expense: ', color: '#EF4444' },
   { label: 'Add Task', icon: CheckSquare, prompt: 'Create a task: ', color: '#3B82F6' },
-  { label: 'Show Summary', icon: BarChart3, prompt: 'Show my spending summary for this month', color: '#8B5CF6' },
+  { label: 'Summary', icon: BarChart3, prompt: 'Show my spending summary for this month', color: '#8B5CF6' },
   { label: 'My Tasks', icon: StickyNote, prompt: 'Show my active tasks', color: '#F59E0B' },
 ];
 
@@ -47,7 +47,7 @@ export default function AgentPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { router.push('/login'); return; }
+      if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
       supabase.from('user_settings').select('gemini_api_key, groq_api_key, selected_model, ai_provider').eq('user_id', user.id).single().then(({ data }) => {
         if (data) {
@@ -61,7 +61,9 @@ export default function AgentPage() {
   }, []);
 
   useEffect(() => {
-    scrollRef.current?.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
+    if (scrollRef.current) {
+      scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
+    }
   }, [messages, isTyping]);
 
   async function send(text?: string) {
@@ -82,19 +84,9 @@ export default function AgentPage() {
       if (data.error) {
         setMessages(prev => [...prev, { id: Date.now().toString(), text: `Error: ${data.error}`, isUser: false, timestamp: new Date() }]);
       } else {
-        // Detect tool usage from history
-        const lastToolCall = data.history?.findLast?.((h: any) =>
-          h.parts?.some((p: any) => p.functionCall)
-        );
+        const lastToolCall = data.history?.findLast?.((h: any) => h.parts?.some((p: any) => p.functionCall));
         const toolName = lastToolCall?.parts?.find((p: any) => p.functionCall)?.functionCall?.name;
-
-        setMessages(prev => [...prev, {
-          id: Date.now().toString(),
-          text: data.text,
-          isUser: false,
-          toolUsed: toolName,
-          timestamp: new Date(),
-        }]);
+        setMessages(prev => [...prev, { id: Date.now().toString(), text: data.text, isUser: false, toolUsed: toolName, timestamp: new Date() }]);
         setHistory(data.history || []);
       }
     } catch (e: any) {
@@ -124,75 +116,73 @@ export default function AgentPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-[100svh] max-w-4xl mx-auto">
+      <div className="flex flex-col h-[calc(100svh-5rem)] md:h-screen overflow-hidden">
         {/* Header */}
-        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-stone/50">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center">
-              <Sparkles size={20} strokeWidth={1.5} className="text-sage" />
+        <div className="flex-none flex items-center justify-between px-4 py-3 sm:px-6 sm:py-4 border-b border-stone/50 bg-white/80 backdrop-blur-sm">
+          <div className="flex items-center gap-3 min-w-0">
+            <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-sage/10 flex items-center justify-center flex-shrink-0">
+              <Sparkles size={18} strokeWidth={1.5} className="text-sage" />
             </div>
-            <div>
-              <h1 className="font-serif text-xl font-semibold text-forest">Cortex AI</h1>
-              <p className="text-xs text-mushroom tracking-wide">{modelName} · {messages.length} messages</p>
+            <div className="min-w-0">
+              <h1 className="font-serif text-base sm:text-xl font-semibold text-forest truncate">Cortex AI</h1>
+              <p className="text-[10px] sm:text-xs text-mushroom tracking-wide">{modelName}</p>
             </div>
           </div>
-          <div className="flex items-center gap-2">
-            {messages.length > 0 && (
-              <button onClick={clearContext} className="w-11 h-11 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-terracotta hover:border-terracotta/30 transition-all duration-300" title="Clear context">
-                <Trash2 size={16} strokeWidth={1.5} />
-              </button>
-            )}
-          </div>
+          {messages.length > 0 && (
+            <button onClick={clearContext} className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-terracotta flex-shrink-0" title="Clear context">
+              <Trash2 size={15} strokeWidth={1.5} />
+            </button>
+          )}
         </div>
 
         {/* API Key warning */}
         {!apiKey && (
-          <div className="mx-6 mt-6 p-4 bg-cream border border-stone/50 rounded-2xl flex items-center gap-3">
-            <div className="w-8 h-8 rounded-full bg-terracotta/10 flex items-center justify-center flex-shrink-0">
-              <Sparkles size={16} strokeWidth={1.5} className="text-terracotta" />
+          <div className="flex-none mx-3 sm:mx-6 mt-3 sm:mt-4 p-3 sm:p-4 bg-cream border border-stone/50 rounded-xl sm:rounded-2xl flex items-center gap-2 sm:gap-3">
+            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-full bg-terracotta/10 flex items-center justify-center flex-shrink-0">
+              <Sparkles size={14} strokeWidth={1.5} className="text-terracotta" />
             </div>
-            <span className="text-sm text-text-secondary">Set your Gemini or Groq API key in Settings to use the AI agent</span>
-            <button onClick={() => router.push('/settings')} className="ml-auto text-sm text-sage font-medium hover:text-terracotta transition-colors duration-300 tracking-wide uppercase">Settings</button>
+            <span className="text-xs sm:text-sm text-text-secondary flex-1">Set your Gemini or Groq API key in Settings</span>
+            <button onClick={() => router.push('/settings')} className="text-xs sm:text-sm text-sage font-medium flex-shrink-0">Settings</button>
           </div>
         )}
 
-        {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 sm:space-y-4">
+        {/* Messages - scrollable area */}
+        <div ref={scrollRef} className="flex-1 min-h-0 overflow-y-auto overscroll-contain px-3 sm:px-6 py-4 space-y-3">
           {messages.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-full text-center">
-              <div className="w-20 h-20 rounded-full bg-sage/10 flex items-center justify-center mb-8 animate-float">
-                <Sparkles size={36} strokeWidth={1.5} className="text-sage" />
+            <div className="flex flex-col items-center justify-center min-h-full text-center py-8">
+              <div className="w-16 h-16 sm:w-20 sm:h-20 rounded-full bg-sage/10 flex items-center justify-center mb-6 sm:mb-8 animate-float">
+                <Sparkles size={28} strokeWidth={1.5} className="text-sage" />
               </div>
-              <h2 className="font-serif text-3xl font-semibold text-forest mb-3">Ask me anything</h2>
-              <p className="text-text-secondary max-w-md leading-relaxed mb-10">
-                I can help you manage expenses, tasks, notes, and more. Just ask in plain English.
+              <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-semibold text-forest mb-2 sm:mb-3">Ask me anything</h2>
+              <p className="text-text-secondary max-w-sm sm:max-w-md leading-relaxed mb-6 sm:mb-10 text-sm sm:text-base px-2">
+                Manage expenses, tasks, notes, and more. Just ask in plain English.
               </p>
 
               {/* Quick Actions */}
-              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mb-8 sm:mb-10">
+              <div className="flex flex-wrap gap-2 justify-center mb-6 sm:mb-8 px-2">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.label}
                     onClick={() => handleQuickAction(action.prompt)}
-                    className="flex items-center gap-2 px-4 py-3 rounded-full text-xs sm:text-sm bg-white border border-stone/50 text-text-secondary hover:text-forest hover:border-sage hover:shadow-botanical transition-all duration-300"
+                    className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm bg-white border border-stone/50 text-text-secondary active:bg-cream active:border-sage transition-all duration-200"
                   >
-                    <action.icon size={16} strokeWidth={1.5} style={{ color: action.color }} />
+                    <action.icon size={14} strokeWidth={1.5} style={{ color: action.color }} />
                     {action.label}
                   </button>
                 ))}
               </div>
 
-              {/* Suggested Prompts by Category */}
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 max-w-2xl w-full">
+              {/* Suggested Prompts */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3 sm:gap-4 md:gap-6 max-w-2xl w-full px-2">
                 {SUGGESTED_PROMPTS.map((cat) => (
                   <div key={cat.category} className="text-left">
-                    <p className="text-[10px] sm:text-xs text-sage font-medium tracking-widest uppercase mb-2 sm:mb-3">{cat.category}</p>
-                    <div className="space-y-1.5 sm:space-y-2">
+                    <p className="text-[10px] sm:text-xs text-sage font-medium tracking-widest uppercase mb-2">{cat.category}</p>
+                    <div className="space-y-1.5">
                       {cat.prompts.map((p) => (
                         <button
                           key={p}
                           onClick={() => { setInput(p); inputRef.current?.focus(); }}
-                          className="w-full text-left px-3 sm:px-4 py-3 rounded-xl text-xs sm:text-sm bg-cream/50 border border-stone/30 text-text-secondary hover:text-forest hover:border-sage/50 transition-all duration-300"
+                          className="w-full text-left px-3 py-2.5 sm:py-3 rounded-lg sm:rounded-xl text-xs sm:text-sm bg-cream/50 border border-stone/30 text-text-secondary active:bg-cream active:border-sage/50 transition-all duration-200"
                         >
                           {p}
                         </button>
@@ -205,45 +195,32 @@ export default function AgentPage() {
           ) : (
             messages.map(m => (
               <div key={m.id} className={`flex ${m.isUser ? 'justify-end' : 'justify-start'} group`}>
-                <div className={`max-w-[80%] ${m.isUser ? 'order-1' : 'order-1'}`}>
-                  {/* Tool Badge */}
+                <div className="max-w-[85%] sm:max-w-[80%]">
                   {!m.isUser && m.toolUsed && (
-                    <div className="flex items-center gap-1.5 mb-1.5 ml-1">
-                      <div className="w-5 h-5 rounded-full bg-sage/10 flex items-center justify-center">
-                        <Sparkles size={10} className="text-sage" />
+                    <div className="flex items-center gap-1.5 mb-1 ml-1">
+                      <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-sage/10 flex items-center justify-center">
+                        <Sparkles size={9} className="text-sage" />
                       </div>
-                      <span className="text-[10px] text-sage font-medium tracking-wider uppercase">{m.toolUsed}</span>
+                      <span className="text-[9px] sm:text-[10px] text-sage font-medium tracking-wider uppercase">{m.toolUsed}</span>
                     </div>
                   )}
 
-                  <div
-                    className={`px-5 py-3.5 rounded-2xl ${
-                      m.isUser
-                        ? 'bg-forest text-white rounded-br-md'
-                        : 'bg-white border border-stone/50 text-forest rounded-bl-md'
-                    }`}
-                  >
+                  <div className={`px-3.5 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl ${m.isUser ? 'bg-forest text-white rounded-br-md' : 'bg-white border border-stone/50 text-forest rounded-bl-md'}`}>
                     {m.isUser ? (
-                      <p className="whitespace-pre-wrap text-sm leading-relaxed">{m.text}</p>
+                      <p className="whitespace-pre-wrap text-[13px] sm:text-sm leading-relaxed break-words">{m.text}</p>
                     ) : (
-                      <div className="prose-botanical text-sm leading-relaxed">
-                        <ReactMarkdown remarkPlugins={[remarkGfm]}>
-                          {m.text}
-                        </ReactMarkdown>
+                      <div className="prose-botanical text-[13px] sm:text-sm leading-relaxed break-words">
+                        <ReactMarkdown remarkPlugins={[remarkGfm]}>{m.text}</ReactMarkdown>
                       </div>
                     )}
                   </div>
 
-                  {/* Message Actions */}
-                  <div className={`flex items-center gap-2 mt-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 ${m.isUser ? 'justify-end mr-1' : 'ml-1'}`}>
-                    <button
-                      onClick={() => copyMessage(m.text, m.id)}
-                      className="flex items-center gap-1.5 px-2 py-1 -mx-2 rounded-md text-[11px] text-mushroom hover:text-sage hover:bg-cream transition-all duration-300"
-                    >
-                      {copiedId === m.id ? <Check size={12} /> : <Copy size={12} />}
+                  <div className={`flex items-center gap-2 mt-1 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 ${m.isUser ? 'justify-end mr-1' : 'ml-1'}`}>
+                    <button onClick={() => copyMessage(m.text, m.id)} className="flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] sm:text-[11px] text-mushroom active:text-sage">
+                      {copiedId === m.id ? <Check size={11} /> : <Copy size={11} />}
                       {copiedId === m.id ? 'Copied' : 'Copy'}
                     </button>
-                    <span className="text-[11px] text-stone">
+                    <span className="text-[10px] sm:text-[11px] text-stone">
                       {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -253,7 +230,7 @@ export default function AgentPage() {
           )}
           {isTyping && (
             <div className="flex justify-start">
-              <div className="bg-white border border-stone/50 px-5 py-3.5 rounded-2xl rounded-bl-md flex gap-2">
+              <div className="bg-white border border-stone/50 px-4 py-3 rounded-2xl rounded-bl-md flex gap-1.5">
                 <span className="w-2 h-2 bg-sage rounded-full animate-bounce" style={{ animationDelay: '0ms' }} />
                 <span className="w-2 h-2 bg-sage rounded-full animate-bounce" style={{ animationDelay: '200ms' }} />
                 <span className="w-2 h-2 bg-sage rounded-full animate-bounce" style={{ animationDelay: '400ms' }} />
@@ -262,15 +239,15 @@ export default function AgentPage() {
           )}
         </div>
 
-        {/* Quick Action Bar (when messages exist) */}
+        {/* Quick Action Bar */}
         {messages.length > 0 && (
-          <div className="px-6 pb-2">
-            <div className="flex gap-2 overflow-x-auto pb-1">
+          <div className="flex-none px-3 sm:px-6 pb-1">
+            <div className="flex gap-1.5 sm:gap-2 overflow-x-auto no-scrollbar pb-1">
               {QUICK_ACTIONS.map((action) => (
                 <button
                   key={action.label}
                   onClick={() => handleQuickAction(action.prompt)}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs bg-cream border border-stone/30 text-text-secondary hover:text-forest hover:border-sage/50 transition-all duration-300 whitespace-nowrap"
+                  className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] sm:text-xs bg-cream border border-stone/30 text-text-secondary active:bg-white active:border-sage/50 whitespace-nowrap flex-shrink-0"
                 >
                   <action.icon size={12} strokeWidth={1.5} style={{ color: action.color }} />
                   {action.label}
@@ -280,21 +257,26 @@ export default function AgentPage() {
           </div>
         )}
 
-        {/* Input */}
-        <div className="p-4 sm:p-6 border-t border-stone/50">
-          <div className="flex gap-3">
+        {/* Input - fixed at bottom */}
+        <div className="flex-none px-3 sm:px-6 py-3 sm:py-4 border-t border-stone/50 bg-white safe-area-bottom">
+          <div className="flex gap-2 sm:gap-3 items-end">
             <input
               ref={inputRef}
               type="text"
               value={input}
               onChange={e => setInput(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && send()}
+              onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
               placeholder="Ask Cortex..."
-              className="input-botanical flex-1"
+              className="flex-1 min-w-0 px-4 sm:px-5 py-3 sm:py-3.5 bg-cream border border-stone/50 rounded-full text-sm text-forest placeholder:text-mushroom focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30 transition-all duration-300"
               disabled={!apiKey}
+              autoComplete="off"
             />
-            <button onClick={() => send()} disabled={!apiKey || isTyping || !input.trim()} className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-forest text-white flex items-center justify-center hover:bg-forest/90 transition-all duration-300 disabled:opacity-50 shadow-botanical">
-              <Send size={18} strokeWidth={1.5} />
+            <button
+              onClick={() => send()}
+              disabled={!apiKey || isTyping || !input.trim()}
+              className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-forest text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 active:scale-95 transition-all duration-200"
+            >
+              <Send size={17} strokeWidth={1.5} />
             </button>
           </div>
         </div>

@@ -139,6 +139,20 @@
   background: var(--color-sage);
 }
 
+/* Hide scrollbar utility */
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+.no-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+/* Safe area for mobile browser bottom bars */
+.safe-area-bottom {
+  padding-bottom: max(0.75rem, env(safe-area-inset-bottom));
+}
+
 /* Markdown Prose Styles for Agent */
 .prose-botanical {
   color: var(--color-forest);
