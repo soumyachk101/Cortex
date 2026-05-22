@@ -1,4 +1,4 @@
-import { GeminiModel } from '@/types';
+import { AIModel } from '@/types';
 
 export const EXPENSE_CATEGORIES = [
   'Food',
@@ -54,38 +54,73 @@ export const CHART_COLORS = [
   '#64748B',
 ];
 
-export const GEMINI_MODELS: GeminiModel[] = [
+export const GEMINI_MODELS: AIModel[] = [
   {
     id: 'gemini-2.0-flash',
     name: 'Gemini 2.0 Flash',
     description: 'Fast, balanced performance',
+    provider: 'gemini',
   },
   {
     id: 'gemini-2.5-flash',
     name: 'Gemini 2.5 Flash',
     description: 'Latest fast model with thinking',
+    provider: 'gemini',
   },
   {
     id: 'gemini-2.5-pro',
     name: 'Gemini 2.5 Pro',
     description: 'Most capable, complex reasoning',
+    provider: 'gemini',
   },
   {
     id: 'gemini-2.0-flash-lite',
     name: 'Gemini 2.0 Flash Lite',
     description: 'Lightweight, fastest responses',
+    provider: 'gemini',
   },
   {
     id: 'gemini-1.5-flash',
     name: 'Gemini 1.5 Flash',
     description: 'Previous gen, reliable',
+    provider: 'gemini',
   },
   {
     id: 'gemini-1.5-pro',
     name: 'Gemini 1.5 Pro',
     description: 'Previous gen, most capable',
+    provider: 'gemini',
   },
 ];
+
+export const GROQ_MODELS: AIModel[] = [
+  {
+    id: 'llama-3.3-70b-versatile',
+    name: 'Llama 3.3 70B',
+    description: 'Best quality, versatile reasoning',
+    provider: 'groq',
+  },
+  {
+    id: 'llama-3.1-8b-instant',
+    name: 'Llama 3.1 8B',
+    description: 'Ultra-fast responses',
+    provider: 'groq',
+  },
+  {
+    id: 'mixtral-8x7b-32768',
+    name: 'Mixtral 8x7B',
+    description: 'Large context, balanced',
+    provider: 'groq',
+  },
+  {
+    id: 'gemma2-9b-it',
+    name: 'Gemma 2 9B',
+    description: 'Google model, fast inference',
+    provider: 'groq',
+  },
+];
+
+export const ALL_MODELS = [...GEMINI_MODELS, ...GROQ_MODELS];
 
 export const DEFAULT_MODEL_ID = 'gemini-2.0-flash';
 

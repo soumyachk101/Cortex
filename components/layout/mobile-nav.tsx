@@ -2,13 +2,13 @@
 
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
-import { Home, Wallet, StickyNote, Bot, Settings } from 'lucide-react';
+import { LayoutDashboard, Wallet, Bot, CalendarDays, Settings } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Home', icon: Home },
+  { href: '/dashboard', label: 'Home', icon: LayoutDashboard },
   { href: '/expenses', label: 'Expenses', icon: Wallet },
-  { href: '/notes', label: 'Notes', icon: StickyNote },
   { href: '/agent', label: 'Agent', icon: Bot },
+  { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 

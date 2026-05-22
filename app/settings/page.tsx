@@ -4,17 +4,21 @@ import { useEffect, useState } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { GEMINI_MODELS, CURRENCIES } from '@/constants';
+import { GEMINI_MODELS, GROQ_MODELS, ALL_MODELS, CURRENCIES } from '@/constants';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Key, Bot, Wallet, Info, Check, Leaf, ChevronRight } from 'lucide-react';
+import { Moon, Sun, Key, Bot, Wallet, Info, Check, Leaf, ChevronRight, Zap } from 'lucide-react';
 
 export default function SettingsPage() {
   const [userId, setUserId] = useState<string>();
-  const [settings, setSettings] = useState({ currency_symbol: '₹', budget_limit: 0, gemini_api_key: '', selected_model: 'gemini-2.0-flash' });
+  const [settings, setSettings] = useState({
+    currency_symbol: '₹', budget_limit: 0, gemini_api_key: '', groq_api_key: '',
+    selected_model: 'gemini-2.0-flash', ai_provider: 'gemini',
+  });
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
   const [apiKeyInput, setApiKeyInput] = useState('');
+  const [apiKeyType, setApiKeyType] = useState<string>('gemini');
   const [showApiKeyModal, setShowApiKeyModal] = useState(false);
   const [showBudgetModal, setShowBudgetModal] = useState(false);
   const { theme, setTheme } = useTheme();
@@ -27,9 +31,8 @@ export default function SettingsPage() {
       setUserId(user.id);
       supabase.from('user_settings').select('*').eq('user_id', user.id).single().then(({ data }) => {
         if (data) {
-          setSettings(data);
+          setSettings(prev => ({ ...prev, ...data }));
           setBudgetInput(data.budget_limit > 0 ? data.budget_limit.toString() : '');
-          setApiKeyInput(data.gemini_api_key || '');
         }
       });
     });
@@ -43,7 +46,10 @@ export default function SettingsPage() {
 
   if (!userId) return null;
 
-  const currentModel = GEMINI_MODELS.find(m => m.id === settings.selected_model) || GEMINI_MODELS[0];
+  const currentModel = ALL_MODELS.find(m => m.id === settings.selected_model) || ALL_MODELS[0];
+  const currentProvider = settings.ai_provider || 'gemini';
+  const currentApiKey = currentProvider === 'groq' ? settings.groq_api_key : settings.gemini_api_key;
+  const hasApiKey = !!currentApiKey;
 
   function SettingRow({ icon: Icon, iconBg, label, value, onClick }: { icon: any; iconBg: string; label: string; value: string; onClick: () => void }) {
     return (
@@ -102,12 +108,51 @@ export default function SettingsPage() {
           <SettingRow icon={Wallet} iconBg="bg-terracotta/10 text-terracotta" label="Monthly Budget Limit" value={settings.budget_limit > 0 ? `${settings.currency_symbol}${settings.budget_limit}` : 'Not set'} onClick={() => { setBudgetInput(settings.budget_limit > 0 ? settings.budget_limit.toString() : ''); setShowBudgetModal(true); }} />
         </div>
 
-        {/* AI Agent */}
-        <h2 className="text-xs font-semibold text-sage mb-4 tracking-[0.2em] uppercase">AI Agent</h2>
+        {/* AI Provider */}
+        <h2 className="text-xs font-semibold text-sage mb-4 tracking-[0.2em] uppercase">AI Provider</h2>
         <div className="bg-white rounded-card border border-stone/50 mb-8 overflow-hidden">
-          <SettingRow icon={Key} iconBg="bg-sage/10 text-sage" label="Gemini API Key" value={settings.gemini_api_key ? `${settings.gemini_api_key.substring(0, 8)}...` : 'Not set'} onClick={() => { setApiKeyInput(settings.gemini_api_key || ''); setShowApiKeyModal(true); }} />
+          {/* Provider Toggle */}
+          <div className="p-5">
+            <p className="font-medium text-forest mb-3">Provider</p>
+            <div className="flex gap-2 p-1 bg-cream rounded-full">
+              <button
+                onClick={() => { updateSetting('ai_provider', 'gemini'); updateSetting('selected_model', 'gemini-2.0-flash'); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${currentProvider === 'gemini' ? 'bg-white text-forest shadow-botanical' : 'text-text-secondary'}`}
+              >
+                <Bot size={16} /> Gemini
+              </button>
+              <button
+                onClick={() => { updateSetting('ai_provider', 'groq'); updateSetting('selected_model', 'llama-3.3-70b-versatile'); }}
+                className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${currentProvider === 'groq' ? 'bg-white text-forest shadow-botanical' : 'text-text-secondary'}`}
+              >
+                <Zap size={16} /> Groq
+              </button>
+            </div>
+          </div>
           <div className="h-px bg-stone/50 mx-5" />
-          <SettingRow icon={Bot} iconBg="bg-clay/50 text-forest" label="AI Model" value={currentModel.name} onClick={() => setShowModelPicker(true)} />
+
+          {/* API Key for current provider */}
+          <SettingRow
+            icon={Key}
+            iconBg="bg-sage/10 text-sage"
+            label={`${currentProvider === 'groq' ? 'Groq' : 'Gemini'} API Key`}
+            value={currentApiKey ? `${currentApiKey.substring(0, 10)}...` : 'Not set'}
+            onClick={() => {
+              setApiKeyType(currentProvider);
+              setApiKeyInput(currentApiKey || '');
+              setShowApiKeyModal(true);
+            }}
+          />
+          <div className="h-px bg-stone/50 mx-5" />
+
+          {/* Model Picker */}
+          <SettingRow
+            icon={Bot}
+            iconBg="bg-clay/50 text-forest"
+            label="AI Model"
+            value={currentModel.name}
+            onClick={() => setShowModelPicker(true)}
+          />
         </div>
 
         {/* About */}
@@ -129,7 +174,7 @@ export default function SettingsPage() {
             </div>
             <div>
               <p className="font-medium text-forest">AI Status</p>
-              <p className="text-sm text-mushroom mt-0.5">{settings.gemini_api_key ? `Ready (${currentModel.name})` : 'Not configured'}</p>
+              <p className="text-sm text-mushroom mt-0.5">{hasApiKey ? `Ready (${currentModel.name} via ${currentProvider})` : 'Not configured'}</p>
             </div>
           </div>
         </div>
@@ -140,12 +185,14 @@ export default function SettingsPage() {
         <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowModelPicker(false)}>
           <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
-            <h2 className="font-serif text-2xl font-semibold text-forest mb-6">Select AI Model</h2>
+            <h2 className="font-serif text-2xl font-semibold text-forest mb-6">
+              Select {currentProvider === 'groq' ? 'Groq' : 'Gemini'} Model
+            </h2>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
-              {GEMINI_MODELS.map(m => (
+              {(currentProvider === 'groq' ? GROQ_MODELS : GEMINI_MODELS).map(m => (
                 <button key={m.id} onClick={() => { updateSetting('selected_model', m.id); setShowModelPicker(false); }} className={`w-full flex items-center gap-4 p-4 rounded-2xl transition-all duration-300 ${m.id === settings.selected_model ? 'bg-sage/10 border border-sage/30' : 'hover:bg-cream'}`}>
                   <div className={`w-11 h-11 rounded-full flex items-center justify-center ${m.id === settings.selected_model ? 'bg-sage/20' : 'bg-cream'}`}>
-                    <Bot size={18} strokeWidth={1.5} className={m.id === settings.selected_model ? 'text-sage' : 'text-mushroom'} />
+                    {currentProvider === 'groq' ? <Zap size={18} strokeWidth={1.5} className={m.id === settings.selected_model ? 'text-sage' : 'text-mushroom'} /> : <Bot size={18} strokeWidth={1.5} className={m.id === settings.selected_model ? 'text-sage' : 'text-mushroom'} />}
                   </div>
                   <div className="text-left flex-1">
                     <p className="font-medium text-forest">{m.name}</p>
@@ -179,12 +226,20 @@ export default function SettingsPage() {
         <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowApiKeyModal(false)}>
           <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
-            <h2 className="font-serif text-2xl font-semibold text-forest mb-2">Gemini API Key</h2>
-            <p className="text-sm text-mushroom mb-6">Get your key from Google AI Studio</p>
-            <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)} className="input-botanical mb-6" placeholder="AIza..." />
+            <h2 className="font-serif text-2xl font-semibold text-forest mb-2">{apiKeyType === 'groq' ? 'Groq' : 'Gemini'} API Key</h2>
+            <p className="text-sm text-mushroom mb-6">
+              {apiKeyType === 'groq'
+                ? 'Get your key from console.groq.com'
+                : 'Get your key from Google AI Studio'}
+            </p>
+            <input type="password" value={apiKeyInput} onChange={e => setApiKeyInput(e.target.value)} className="input-botanical mb-6" placeholder={apiKeyType === 'groq' ? 'gsk_...' : 'AIza...'} />
             <div className="flex gap-3">
               <button onClick={() => setShowApiKeyModal(false)} className="btn-botanical-secondary flex-1">Cancel</button>
-              <button onClick={() => { updateSetting('gemini_api_key', apiKeyInput); setShowApiKeyModal(false); }} className="btn-botanical flex-1">Save</button>
+              <button onClick={() => {
+                const key = apiKeyType === 'groq' ? 'groq_api_key' : 'gemini_api_key';
+                updateSetting(key, apiKeyInput);
+                setShowApiKeyModal(false);
+              }} className="btn-botanical flex-1">Save</button>
             </div>
           </div>
         </div>

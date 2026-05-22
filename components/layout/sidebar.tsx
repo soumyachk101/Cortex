@@ -3,20 +3,26 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import {
-  Home,
+  LayoutDashboard,
   Wallet,
+  BarChart3,
+  CalendarDays,
   StickyNote,
   Bot,
+  Timer,
   Settings,
   LogOut,
   Leaf,
 } from 'lucide-react';
 
 const NAV_ITEMS = [
-  { href: '/', label: 'Home', icon: Home },
+  { href: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
   { href: '/expenses', label: 'Expenses', icon: Wallet },
+  { href: '/analytics', label: 'Analytics', icon: BarChart3 },
+  { href: '/calendar', label: 'Calendar', icon: CalendarDays },
   { href: '/notes', label: 'Notes', icon: StickyNote },
   { href: '/agent', label: 'Agent', icon: Bot },
+  { href: '/focus', label: 'Focus', icon: Timer },
   { href: '/settings', label: 'Settings', icon: Settings },
 ];
 
@@ -36,7 +42,7 @@ export function Sidebar() {
       </div>
 
       {/* Nav */}
-      <nav className="flex-1 px-4 space-y-1">
+      <nav className="flex-1 px-4 space-y-1 overflow-y-auto">
         {NAV_ITEMS.map((item) => {
           const isActive = pathname === item.href;
           return (

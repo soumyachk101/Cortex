@@ -44,7 +44,9 @@ export interface UserSettings {
   currency_symbol: string;
   budget_limit: number;
   gemini_api_key: string;
+  groq_api_key: string;
   selected_model: string;
+  ai_provider: string;
   theme: string;
   onboarding_done: boolean;
 }
@@ -56,8 +58,30 @@ export interface ChatMessage {
   timestamp: Date;
 }
 
-export interface GeminiModel {
+export interface AIModel {
   id: string;
   name: string;
   description: string;
+  provider: 'gemini' | 'groq';
+}
+
+// Legacy alias
+export type GeminiModel = AIModel;
+
+export interface ChatSession {
+  id: string;
+  user_id: string;
+  title: string;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface ChatContext {
+  id: string;
+  session_id: string;
+  user_id: string;
+  role: 'user' | 'assistant' | 'system';
+  content: string;
+  tool_used: string | null;
+  created_at: string;
 }
