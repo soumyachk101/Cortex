@@ -7,8 +7,13 @@ export async function GET(request: Request) {
 
   if (code) {
     const supabase = await createClient();
-    const { error } = await supabase.auth.exchangeCodeForSession(code);
-    if (!error) {
+    const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+    if (!error && data.user) {
+      // Ensure user_settings row exists (for Google OAuth users)
+      await supabase.from('user_settings').upsert(
+        { user_id: data.user.id },
+        { onConflict: 'user_id', ignoreDuplicates: true }
+      );
       return NextResponse.redirect(`${origin}/dashboard`);
     }
   }

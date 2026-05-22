@@ -52,38 +52,65 @@ export default function SettingsPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
-      supabase.from('user_settings')
+
+      // Ensure row exists
+      await supabase.from('user_settings').upsert(
+        { user_id: user.id },
+        { onConflict: 'user_id', ignoreDuplicates: true }
+      );
+
+      // Load settings
+      const { data } = await supabase
+        .from('user_settings')
         .select('currency_symbol, budget_limit, gemini_api_key, selected_model, theme')
         .eq('user_id', user.id)
-        .maybeSingle()
-        .then(({ data }) => {
-          if (data) {
-            setCurrency(data.currency_symbol || '₹');
-            setBudget(data.budget_limit || 0);
-            const keys = parseKeys(data.gemini_api_key || '');
-            setGeminiKey(keys.gemini);
-            setGroqKey(keys.groq);
-            const parsed = parseModel(data.selected_model || 'gemini-2.0-flash');
-            setProvider(parsed.provider);
-            setModelId(parsed.modelId);
-          }
-        });
+        .maybeSingle();
+
+      if (data) {
+        setCurrency(data.currency_symbol || '₹');
+        setBudget(data.budget_limit || 0);
+        const keys = parseKeys(data.gemini_api_key || '');
+        setGeminiKey(keys.gemini);
+        setGroqKey(keys.groq);
+        const parsed = parseModel(data.selected_model || 'gemini-2.0-flash');
+        setProvider(parsed.provider);
+        setModelId(parsed.modelId);
+      }
     });
   }, []);
 
-  function saveKeys(newGemini: string, newGroq: string) {
+  async function saveKeys(newGemini: string, newGroq: string) {
     if (!userId) return;
     const encoded = encodeKeys(newGemini, newGroq);
-    supabase.from('user_settings').upsert({ user_id: userId, gemini_api_key: encoded });
+    console.log('Saving keys:', { userId, encoded });
+    const { data, error } = await supabase
+      .from('user_settings')
+      .upsert({ user_id: userId, gemini_api_key: encoded }, { onConflict: 'user_id' })
+      .select();
+    if (error) {
+      console.error('Save keys error:', error);
+      alert(`Error saving API key: ${error.message}`);
+    } else {
+      console.log('Keys saved successfully:', data);
+    }
   }
 
   async function save(key: string, value: any) {
     if (!userId) return;
-    const { error } = await supabase.from('user_settings').upsert({ user_id: userId, [key]: value });
-    if (error) console.error('Save error:', error);
+    console.log('Saving setting:', { key, value, userId });
+    const { data, error } = await supabase
+      .from('user_settings')
+      .upsert({ user_id: userId, [key]: value }, { onConflict: 'user_id' })
+      .select();
+    if (error) {
+      console.error('Save error:', error);
+      alert(`Error saving: ${error.message}`);
+    } else {
+      console.log('Saved successfully:', data);
+    }
   }
 
   if (!userId) return null;
