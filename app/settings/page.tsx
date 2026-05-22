@@ -27,9 +27,9 @@ export default function SettingsPage() {
 
   useEffect(() => {
     supabase.auth.getUser().then(({ data: { user } }) => {
-      if (!user) { router.push('/login'); return; }
+      if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
-      supabase.from('user_settings').select('*').eq('user_id', user.id).single().then(({ data }) => {
+      supabase.from('user_settings').select('*').eq('user_id', user.id).maybeSingle().then(({ data, error }) => {
         if (data) {
           setSettings(prev => ({ ...prev, ...data }));
           setBudgetInput(data.budget_limit > 0 ? data.budget_limit.toString() : '');
@@ -40,8 +40,13 @@ export default function SettingsPage() {
 
   async function updateSetting(key: string, value: any) {
     if (!userId) return;
-    await supabase.from('user_settings').upsert({ user_id: userId, [key]: value });
-    setSettings(prev => ({ ...prev, [key]: value }));
+    const { error } = await supabase.from('user_settings').upsert({ user_id: userId, [key]: value });
+    if (error) {
+      console.error('Save error:', error);
+      alert(`Failed to save: ${error.message}. Run the database migration first.`);
+    } else {
+      setSettings(prev => ({ ...prev, [key]: value }));
+    }
   }
 
   if (!userId) return null;

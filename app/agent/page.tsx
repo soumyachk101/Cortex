@@ -46,17 +46,37 @@ export default function AgentPage() {
   const supabase = createClient();
 
   useEffect(() => {
-    supabase.auth.getUser().then(({ data: { user } }) => {
+    supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
-      supabase.from('user_settings').select('gemini_api_key, groq_api_key, selected_model, ai_provider').eq('user_id', user.id).single().then(({ data }) => {
-        if (data) {
-          const p = data.ai_provider || 'gemini';
-          setProvider(p);
-          setApiKey(p === 'groq' ? (data.groq_api_key || '') : (data.gemini_api_key || ''));
-          setModelId(data.selected_model || 'gemini-2.0-flash');
-        }
-      });
+
+      // Try loading with new columns first, fall back to old schema
+      let data: any = null;
+      let { data: d1, error: e1 } = await supabase
+        .from('user_settings')
+        .select('gemini_api_key, groq_api_key, selected_model, ai_provider')
+        .eq('user_id', user.id)
+        .maybeSingle();
+
+      if (e1 || !d1) {
+        // Fallback: old schema without groq columns
+        const { data: d2 } = await supabase
+          .from('user_settings')
+          .select('gemini_api_key, selected_model')
+          .eq('user_id', user.id)
+          .maybeSingle();
+        data = d2;
+      } else {
+        data = d1;
+      }
+
+      if (data) {
+        const p = data.ai_provider || 'gemini';
+        setProvider(p);
+        const key = p === 'groq' ? (data.groq_api_key || '') : (data.gemini_api_key || '');
+        setApiKey(key);
+        setModelId(data.selected_model || 'gemini-2.0-flash');
+      }
     });
   }, []);
 
