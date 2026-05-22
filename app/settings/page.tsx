@@ -84,7 +84,9 @@ export default function SettingsPage() {
 
   async function saveKeys(newGemini: string, newGroq: string) {
     if (!userId) return;
-    const encoded = encodeKeys(newGemini, newGroq);
+    const cleanGemini = newGemini.trim();
+    const cleanGroq = newGroq.trim();
+    const encoded = encodeKeys(cleanGemini, cleanGroq);
     console.log('Saving keys:', { userId, encoded });
     const { data, error } = await supabase
       .from('user_settings')
@@ -302,12 +304,13 @@ export default function SettingsPage() {
             <div className="flex gap-3">
               <button onClick={() => setShowApiKeyModal(false)} className="btn-botanical-secondary flex-1">Cancel</button>
               <button onClick={() => {
+                const trimmedKey = apiKeyInput.trim();
                 if (provider === 'groq') {
-                  setGroqKey(apiKeyInput);
-                  saveKeys(geminiKey, apiKeyInput);
+                  setGroqKey(trimmedKey);
+                  saveKeys(geminiKey, trimmedKey);
                 } else {
-                  setGeminiKey(apiKeyInput);
-                  saveKeys(apiKeyInput, groqKey);
+                  setGeminiKey(trimmedKey);
+                  saveKeys(trimmedKey, groqKey);
                 }
                 setShowApiKeyModal(false);
               }} className="btn-botanical flex-1">Save</button>

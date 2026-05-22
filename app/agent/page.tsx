@@ -77,12 +77,12 @@ export default function AgentPage() {
           if (typeof parsed === 'object' && parsed !== null) {
             key = p === 'groq' ? (parsed.groq || '') : (parsed.gemini || '');
           } else {
-            key = rawKey;
+            key = p === 'gemini' ? rawKey : '';
           }
         } catch {
-          key = rawKey; // Legacy plain string
+          key = p === 'gemini' ? rawKey : ''; // Legacy plain string is Gemini key
         }
-        setApiKey(key);
+        setApiKey(key.trim());
       }
     });
   }, []);
