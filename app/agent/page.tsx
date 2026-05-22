@@ -124,9 +124,9 @@ export default function AgentPage() {
 
   return (
     <AppShell>
-      <div className="flex flex-col h-screen max-w-4xl mx-auto">
+      <div className="flex flex-col h-[100svh] max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between p-6 border-b border-stone/50">
+        <div className="flex items-center justify-between p-4 sm:p-6 border-b border-stone/50">
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center">
               <Sparkles size={20} strokeWidth={1.5} className="text-sage" />
@@ -151,13 +151,13 @@ export default function AgentPage() {
             <div className="w-8 h-8 rounded-full bg-terracotta/10 flex items-center justify-center flex-shrink-0">
               <Sparkles size={16} strokeWidth={1.5} className="text-terracotta" />
             </div>
-            <span className="text-sm text-text-secondary">Set your Gemini API key in Settings to use the AI agent</span>
+            <span className="text-sm text-text-secondary">Set your Gemini or Groq API key in Settings to use the AI agent</span>
             <button onClick={() => router.push('/settings')} className="ml-auto text-sm text-sage font-medium hover:text-terracotta transition-colors duration-300 tracking-wide uppercase">Settings</button>
           </div>
         )}
 
         {/* Messages */}
-        <div ref={scrollRef} className="flex-1 overflow-y-auto p-6 space-y-4">
+        <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-3 sm:space-y-4">
           {messages.length === 0 ? (
             <div className="flex flex-col items-center justify-center h-full text-center">
               <div className="w-20 h-20 rounded-full bg-sage/10 flex items-center justify-center mb-8 animate-float">
@@ -281,7 +281,7 @@ export default function AgentPage() {
         )}
 
         {/* Input */}
-        <div className="p-6 border-t border-stone/50">
+        <div className="p-4 sm:p-6 border-t border-stone/50">
           <div className="flex gap-3">
             <input
               ref={inputRef}

@@ -56,15 +56,15 @@ export default function DashboardPage() {
 
   return (
     <AppShell>
-      <div className="px-6 md:px-12 lg:px-16 py-12 md:py-16 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 max-w-6xl mx-auto">
 
         {/* Header */}
-        <div className="flex items-center justify-between mb-16">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center">
-              <Leaf size={22} strokeWidth={1.5} className="text-sage" />
+        <div className="flex items-center justify-between mb-10 sm:mb-16">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-sage/10 flex items-center justify-center">
+              <Leaf size={20} strokeWidth={1.5} className="text-sage" />
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-semibold text-forest tracking-tight">
+            <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-forest tracking-tight">
               Dashboard
             </h1>
           </div>
@@ -97,12 +97,12 @@ export default function DashboardPage() {
         </div>
 
         {/* Balance Card */}
-        <div className="gradient-botanical rounded-card p-8 md:p-10 text-white mb-12 shadow-botanical-xl relative overflow-hidden">
+        <div className="gradient-botanical rounded-card p-5 sm:p-8 md:p-10 text-white mb-8 sm:mb-12 shadow-botanical-xl relative overflow-hidden">
           <div className="absolute -top-16 -right-16 w-48 h-48 rounded-full bg-white/5" />
           <div className="absolute -bottom-8 -left-8 w-32 h-32 rounded-full bg-white/5" />
 
-          <p className="text-white/70 text-sm tracking-widest uppercase font-medium">Total Spent</p>
-          <p className="font-serif text-5xl md:text-6xl font-bold mt-3 tracking-tight">
+          <p className="text-white/70 text-xs sm:text-sm tracking-widest uppercase font-medium">Total Spent</p>
+          <p className="font-serif text-4xl sm:text-5xl md:text-6xl font-bold mt-2 sm:mt-3 tracking-tight">
             {currency}{totalSpent.toFixed(0)}
           </p>
           {budget > 0 && (
@@ -121,17 +121,17 @@ export default function DashboardPage() {
         </div>
 
         {/* Quick Stats */}
-        <div className="grid grid-cols-3 gap-4 md:gap-6 mb-12">
+        <div className="grid grid-cols-3 gap-3 sm:gap-4 md:gap-6 mb-8 sm:mb-12">
           {stats.map((s, i) => (
             <div
               key={s.label}
-              className={`card-botanical-flat p-6 text-center ${i % 2 === 1 ? 'md:translate-y-3' : ''}`}
+              className={`card-botanical-flat p-4 sm:p-6 text-center ${i % 2 === 1 ? 'md:translate-y-3' : ''}`}
             >
-              <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center mx-auto mb-4">
-                <s.icon size={20} strokeWidth={1.5} className="text-sage" />
+              <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-sage/10 flex items-center justify-center mx-auto mb-3 sm:mb-4">
+                <s.icon size={18} strokeWidth={1.5} className="text-sage" />
               </div>
-              <p className="font-serif text-3xl font-semibold text-forest">{s.value}</p>
-              <p className="text-xs text-text-secondary mt-1 tracking-wider uppercase">{s.label}</p>
+              <p className="font-serif text-2xl sm:text-3xl font-semibold text-forest">{s.value}</p>
+              <p className="text-[10px] sm:text-xs text-text-secondary mt-1 tracking-wider uppercase">{s.label}</p>
             </div>
           ))}
         </div>

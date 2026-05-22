@@ -107,14 +107,14 @@ export default function FocusPage() {
 
   return (
     <AppShell>
-      <div className="px-6 md:px-12 lg:px-16 py-12 md:py-16 max-w-4xl mx-auto">
+      <div className="px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 max-w-4xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-16">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center">
-              <Timer size={22} strokeWidth={1.5} className="text-sage" />
+        <div className="flex items-center justify-between mb-10 sm:mb-16">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-sage/10 flex items-center justify-center">
+              <Timer size={20} strokeWidth={1.5} className="text-sage" />
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-semibold text-forest tracking-tight">
+            <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-forest tracking-tight">
               Focus
             </h1>
           </div>

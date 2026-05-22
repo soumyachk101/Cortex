@@ -69,14 +69,14 @@ export default function AnalyticsPage() {
 
   return (
     <AppShell>
-      <div className="px-6 md:px-12 lg:px-16 py-12 md:py-16 max-w-6xl mx-auto">
+      <div className="px-4 sm:px-6 md:px-12 lg:px-16 py-8 sm:py-12 md:py-16 max-w-6xl mx-auto">
         {/* Header */}
-        <div className="flex items-center justify-between mb-16">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center">
-              <BarChart3 size={22} strokeWidth={1.5} className="text-sage" />
+        <div className="flex items-center justify-between mb-10 sm:mb-16">
+          <div className="flex items-center gap-3 sm:gap-4">
+            <div className="w-10 h-10 sm:w-12 sm:h-12 rounded-full bg-sage/10 flex items-center justify-center">
+              <BarChart3 size={20} strokeWidth={1.5} className="text-sage" />
             </div>
-            <h1 className="font-serif text-4xl md:text-5xl font-semibold text-forest tracking-tight">
+            <h1 className="font-serif text-2xl sm:text-4xl md:text-5xl font-semibold text-forest tracking-tight">
               Analytics
             </h1>
           </div>
@@ -103,13 +103,13 @@ export default function AnalyticsPage() {
         </div>
 
         {/* Summary Cards */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 md:gap-6 mb-12">
-          <div className="card-botanical p-6">
-            <div className="w-10 h-10 rounded-full bg-sage/10 flex items-center justify-center mb-3">
-              <Receipt size={18} strokeWidth={1.5} className="text-sage" />
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4 md:gap-6 mb-8 sm:mb-12">
+          <div className="card-botanical p-4 sm:p-6">
+            <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-sage/10 flex items-center justify-center mb-2 sm:mb-3">
+              <Receipt size={16} strokeWidth={1.5} className="text-sage" />
             </div>
-            <p className="text-xs text-text-secondary tracking-wider uppercase mb-1">Total Spent</p>
-            <p className="font-serif text-2xl font-semibold text-forest">{currency}{totalSpent.toFixed(0)}</p>
+            <p className="text-[10px] sm:text-xs text-text-secondary tracking-wider uppercase mb-1">Total Spent</p>
+            <p className="font-serif text-xl sm:text-2xl font-semibold text-forest">{currency}{totalSpent.toFixed(0)}</p>
           </div>
 
           <div className="card-botanical p-6">
