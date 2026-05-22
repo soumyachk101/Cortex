@@ -86,7 +86,7 @@ export default function NotesPage() {
                 </div>
               )}
             </div>
-            <button onClick={() => { setEditNote(null); setNoteForm({ title: '', content: '' }); setShowModal(true); }} className="fixed bottom-24 md:bottom-8 right-6 md:right-10 w-14 h-14 rounded-full bg-forest text-white flex items-center justify-center shadow-botanical-xl hover:bg-forest/90 transition-all duration-300"><Plus size={22} strokeWidth={1.5} /></button>
+            <button onClick={() => { setEditNote(null); setNoteForm({ title: '', content: '' }); setShowModal(true); }} className="fixed bottom-24 lg:bottom-8 right-6 lg:right-10 w-14 h-14 rounded-full bg-forest text-white flex items-center justify-center shadow-botanical-xl hover:bg-forest/90 transition-all duration-300"><Plus size={22} strokeWidth={1.5} /></button>
           </div>
         )}
 
@@ -117,7 +117,7 @@ export default function NotesPage() {
                 </div>
               )}
             </div>
-            <button onClick={() => setShowModal(true)} className="fixed bottom-24 md:bottom-8 right-6 md:right-10 w-14 h-14 rounded-full bg-forest text-white flex items-center justify-center shadow-botanical-xl hover:bg-forest/90 transition-all duration-300"><Plus size={22} strokeWidth={1.5} /></button>
+            <button onClick={() => setShowModal(true)} className="fixed bottom-24 lg:bottom-8 right-6 lg:right-10 w-14 h-14 rounded-full bg-forest text-white flex items-center justify-center shadow-botanical-xl hover:bg-forest/90 transition-all duration-300"><Plus size={22} strokeWidth={1.5} /></button>
           </div>
         )}
 
@@ -151,7 +151,7 @@ export default function NotesPage() {
                 </div>
               )}
             </div>
-            <button onClick={() => setShowModal(true)} className="fixed bottom-24 md:bottom-8 right-6 md:right-10 w-14 h-14 rounded-full bg-forest text-white flex items-center justify-center shadow-botanical-xl hover:bg-forest/90 transition-all duration-300"><Plus size={22} strokeWidth={1.5} /></button>
+            <button onClick={() => setShowModal(true)} className="fixed bottom-24 lg:bottom-8 right-6 lg:right-10 w-14 h-14 rounded-full bg-forest text-white flex items-center justify-center shadow-botanical-xl hover:bg-forest/90 transition-all duration-300"><Plus size={22} strokeWidth={1.5} /></button>
           </div>
         )}
 
