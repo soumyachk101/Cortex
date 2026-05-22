@@ -25,7 +25,7 @@
 @layer components {
   /* Botanical Button Styles */
   .btn-botanical {
-    @apply inline-flex items-center justify-center px-8 py-3.5
+    @apply inline-flex items-center justify-center px-4 sm:px-8 py-3.5
            bg-forest text-white rounded-full
            text-sm font-medium tracking-widest uppercase
            transition-all duration-300 ease-out
@@ -35,7 +35,7 @@
   }
 
   .btn-botanical-secondary {
-    @apply inline-flex items-center justify-center px-8 py-3.5
+    @apply inline-flex items-center justify-center px-4 sm:px-8 py-3.5
            bg-transparent text-sage border border-sage rounded-full
            text-sm font-medium tracking-widest uppercase
            transition-all duration-300 ease-out
@@ -44,7 +44,7 @@
   }
 
   .btn-botanical-terracotta {
-    @apply inline-flex items-center justify-center px-8 py-3.5
+    @apply inline-flex items-center justify-center px-4 sm:px-8 py-3.5
            bg-terracotta text-white rounded-full
            text-sm font-medium tracking-widest uppercase
            transition-all duration-300 ease-out

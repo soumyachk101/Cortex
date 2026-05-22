@@ -154,8 +154,8 @@ export default function ExpensesPage() {
 
         {/* Add/Edit Modal */}
         {showAdd && (
-          <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowAdd(false)}>
-            <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-40" onClick={() => setShowAdd(false)}>
+            <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-stone/50 shadow-botanical-lg flex flex-col max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
               <h2 className="font-serif text-2xl font-semibold text-forest mb-6">{editId ? 'Edit Expense' : 'Add Expense'}</h2>
               <form onSubmit={handleSubmit} className="space-y-5">

@@ -157,8 +157,8 @@ export default function NotesPage() {
 
         {/* Modal */}
         {showModal && (
-          <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowModal(false)}>
-            <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+          <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-40" onClick={() => setShowModal(false)}>
+            <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-stone/50 shadow-botanical-lg flex flex-col max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
               <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
 
               {tab === 'notes' && (

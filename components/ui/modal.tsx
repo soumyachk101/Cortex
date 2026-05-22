@@ -24,15 +24,15 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
+    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
       {/* Backdrop */}
       <div className="absolute inset-0 bg-black/50 backdrop-blur-sm" onClick={onClose} />
 
       {/* Content */}
       <div
         className={cn(
-          'relative w-full max-w-lg bg-surface-light dark:bg-surface-dark rounded-t-2xl md:rounded-2xl p-6',
-          'animate-in slide-in-from-bottom md:fade-in-0 md:zoom-in-95',
+          'relative w-full max-w-lg bg-surface-light dark:bg-surface-dark rounded-2xl p-6 border border-border-light dark:border-border-dark shadow-lg max-h-[90dvh] overflow-y-auto flex flex-col',
+          'animate-in fade-in-0 zoom-in-95',
           className
         )}
       >

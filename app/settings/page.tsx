@@ -250,8 +250,8 @@ export default function SettingsPage() {
 
       {/* Model Picker Modal */}
       {showModelPicker && (
-        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowModelPicker(false)}>
-          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 sm:p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-40" onClick={() => setShowModelPicker(false)}>
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-stone/50 shadow-botanical-lg flex flex-col max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
             <h2 className="font-serif text-xl sm:text-2xl font-semibold text-forest mb-6">Select {provider === 'groq' ? 'Groq' : 'Gemini'} Model</h2>
             <div className="space-y-2 max-h-[60vh] overflow-y-auto">
@@ -278,8 +278,8 @@ export default function SettingsPage() {
 
       {/* Currency Picker Modal */}
       {showCurrencyPicker && (
-        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowCurrencyPicker(false)}>
-          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 sm:p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-40" onClick={() => setShowCurrencyPicker(false)}>
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-stone/50 shadow-botanical-lg flex flex-col max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
             <h2 className="font-serif text-xl sm:text-2xl font-semibold text-forest mb-6">Currency Symbol</h2>
             <div className="grid grid-cols-4 sm:grid-cols-5 gap-3">
@@ -293,8 +293,8 @@ export default function SettingsPage() {
 
       {/* API Key Modal */}
       {showApiKeyModal && (
-        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowApiKeyModal(false)}>
-          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 sm:p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-40" onClick={() => setShowApiKeyModal(false)}>
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-stone/50 shadow-botanical-lg flex flex-col max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
             <h2 className="font-serif text-xl sm:text-2xl font-semibold text-forest mb-2">{provider === 'groq' ? 'Groq' : 'Gemini'} API Key</h2>
             <p className="text-sm text-mushroom mb-6">
@@ -321,8 +321,8 @@ export default function SettingsPage() {
 
       {/* Budget Modal */}
       {showBudgetModal && (
-        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-end md:items-center justify-center z-40" onClick={() => setShowBudgetModal(false)}>
-          <div className="bg-white w-full max-w-lg rounded-t-3xl md:rounded-3xl p-6 sm:p-8 border-t border-stone/50" onClick={e => e.stopPropagation()}>
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-40" onClick={() => setShowBudgetModal(false)}>
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-stone/50 shadow-botanical-lg flex flex-col max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
             <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
             <h2 className="font-serif text-xl sm:text-2xl font-semibold text-forest mb-6">Monthly Budget</h2>
             <div className="relative mb-6">
