@@ -138,7 +138,7 @@ export default function AgentPage() {
           </div>
           <div className="flex items-center gap-2">
             {messages.length > 0 && (
-              <button onClick={clearContext} className="w-10 h-10 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-terracotta hover:border-terracotta/30 transition-all duration-300" title="Clear context">
+              <button onClick={clearContext} className="w-11 h-11 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-terracotta hover:border-terracotta/30 transition-all duration-300" title="Clear context">
                 <Trash2 size={16} strokeWidth={1.5} />
               </button>
             )}
@@ -169,12 +169,12 @@ export default function AgentPage() {
               </p>
 
               {/* Quick Actions */}
-              <div className="flex flex-wrap gap-3 justify-center mb-10">
+              <div className="flex flex-wrap gap-2 sm:gap-3 justify-center mb-8 sm:mb-10">
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.label}
                     onClick={() => handleQuickAction(action.prompt)}
-                    className="flex items-center gap-2 px-4 py-2.5 rounded-full text-sm bg-white border border-stone/50 text-text-secondary hover:text-forest hover:border-sage hover:shadow-botanical transition-all duration-300"
+                    className="flex items-center gap-2 px-4 py-3 rounded-full text-xs sm:text-sm bg-white border border-stone/50 text-text-secondary hover:text-forest hover:border-sage hover:shadow-botanical transition-all duration-300"
                   >
                     <action.icon size={16} strokeWidth={1.5} style={{ color: action.color }} />
                     {action.label}
@@ -183,16 +183,16 @@ export default function AgentPage() {
               </div>
 
               {/* Suggested Prompts by Category */}
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-6 max-w-2xl w-full">
+              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 sm:gap-6 max-w-2xl w-full">
                 {SUGGESTED_PROMPTS.map((cat) => (
                   <div key={cat.category} className="text-left">
-                    <p className="text-xs text-sage font-medium tracking-widest uppercase mb-3">{cat.category}</p>
-                    <div className="space-y-2">
+                    <p className="text-[10px] sm:text-xs text-sage font-medium tracking-widest uppercase mb-2 sm:mb-3">{cat.category}</p>
+                    <div className="space-y-1.5 sm:space-y-2">
                       {cat.prompts.map((p) => (
                         <button
                           key={p}
                           onClick={() => { setInput(p); inputRef.current?.focus(); }}
-                          className="w-full text-left px-4 py-2.5 rounded-xl text-sm bg-cream/50 border border-stone/30 text-text-secondary hover:text-forest hover:border-sage/50 transition-all duration-300"
+                          className="w-full text-left px-3 sm:px-4 py-3 rounded-xl text-xs sm:text-sm bg-cream/50 border border-stone/30 text-text-secondary hover:text-forest hover:border-sage/50 transition-all duration-300"
                         >
                           {p}
                         </button>
@@ -235,15 +235,15 @@ export default function AgentPage() {
                   </div>
 
                   {/* Message Actions */}
-                  <div className={`flex items-center gap-2 mt-1.5 opacity-0 group-hover:opacity-100 transition-opacity duration-300 ${m.isUser ? 'justify-end mr-1' : 'ml-1'}`}>
+                  <div className={`flex items-center gap-2 mt-1.5 opacity-100 sm:opacity-0 sm:group-hover:opacity-100 transition-opacity duration-300 ${m.isUser ? 'justify-end mr-1' : 'ml-1'}`}>
                     <button
                       onClick={() => copyMessage(m.text, m.id)}
-                      className="flex items-center gap-1 text-[10px] text-mushroom hover:text-sage transition-colors duration-300"
+                      className="flex items-center gap-1.5 px-2 py-1 -mx-2 rounded-md text-[11px] text-mushroom hover:text-sage hover:bg-cream transition-all duration-300"
                     >
-                      {copiedId === m.id ? <Check size={10} /> : <Copy size={10} />}
+                      {copiedId === m.id ? <Check size={12} /> : <Copy size={12} />}
                       {copiedId === m.id ? 'Copied' : 'Copy'}
                     </button>
-                    <span className="text-[10px] text-stone">
+                    <span className="text-[11px] text-stone">
                       {m.timestamp.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                     </span>
                   </div>
@@ -293,7 +293,7 @@ export default function AgentPage() {
               className="input-botanical flex-1"
               disabled={!apiKey}
             />
-            <button onClick={() => send()} disabled={!apiKey || isTyping || !input.trim()} className="w-12 h-12 rounded-full bg-forest text-white flex items-center justify-center hover:bg-forest/90 transition-all duration-300 disabled:opacity-50 shadow-botanical">
+            <button onClick={() => send()} disabled={!apiKey || isTyping || !input.trim()} className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-forest text-white flex items-center justify-center hover:bg-forest/90 transition-all duration-300 disabled:opacity-50 shadow-botanical">
               <Send size={18} strokeWidth={1.5} />
             </button>
           </div>

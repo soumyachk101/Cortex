@@ -86,7 +86,7 @@ export function LandingNavbar() {
           {/* Mobile Menu Button */}
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className={`md:hidden w-9 h-9 rounded-lg flex items-center justify-center transition-all duration-300 ${iconBg} ${textColor}`}
+            className={`md:hidden w-11 h-11 rounded-lg flex items-center justify-center transition-all duration-300 ${iconBg} ${textColor}`}
           >
             {mobileOpen ? <X size={18} /> : <Menu size={18} />}
           </button>

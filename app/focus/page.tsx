@@ -97,7 +97,7 @@ export default function FocusPage() {
   const progress = 1 - timeLeft / MODES[mode].duration;
 
   // Circle dimensions
-  const size = 280;
+  const size = 260;
   const strokeWidth = 6;
   const radius = (size - strokeWidth) / 2;
   const circumference = 2 * Math.PI * radius;
@@ -139,8 +139,8 @@ export default function FocusPage() {
           </div>
 
           {/* Timer Circle */}
-          <div className="relative mb-12">
-            <svg width={size} height={size} className="-rotate-90">
+          <div className="relative mb-10 sm:mb-12 w-[260px] max-w-[80vw] aspect-square">
+            <svg width="100%" height="100%" viewBox={`0 0 ${size} ${size}`} className="-rotate-90">
               {/* Background circle */}
               <circle
                 cx={size / 2}
@@ -165,7 +165,7 @@ export default function FocusPage() {
               />
             </svg>
             <div className="absolute inset-0 flex flex-col items-center justify-center">
-              <span className="font-serif text-6xl md:text-7xl font-bold text-forest tabular-nums">
+              <span className="font-serif text-5xl sm:text-6xl md:text-7xl font-bold text-forest tabular-nums">
                 {String(minutes).padStart(2, '0')}:{String(seconds).padStart(2, '0')}
               </span>
               <span className="text-sm text-text-secondary mt-2 tracking-wider uppercase">{MODES[mode].label}</span>

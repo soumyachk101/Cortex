@@ -125,7 +125,7 @@ export default function CalendarPage() {
           >
             <ChevronLeft size={18} strokeWidth={1.5} />
           </button>
-          <span className="font-serif text-xl text-forest min-w-[200px] text-center">
+          <span className="font-serif text-xl text-forest min-w-[140px] sm:min-w-[200px] text-center">
             {currentMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </span>
           <button
@@ -217,7 +217,7 @@ export default function CalendarPage() {
                   <h3 className="font-serif text-xl font-semibold text-forest">
                     {selectedDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' })}
                   </h3>
-                  <button onClick={() => setSelectedDate(null)} className="w-8 h-8 rounded-full bg-cream flex items-center justify-center text-mushroom hover:text-forest transition-colors">
+                  <button onClick={() => setSelectedDate(null)} className="w-10 h-10 rounded-full bg-cream flex items-center justify-center text-mushroom hover:text-forest transition-colors">
                     <X size={14} />
                   </button>
                 </div>

@@ -78,7 +78,7 @@ export function AIShowcase() {
             <div className="mt-4 sm:mt-6 pt-4 sm:pt-6 border-t border-stone/30">
               <div className="flex items-center gap-2 sm:gap-3 px-4 sm:px-5 py-3 sm:py-3.5 bg-cream rounded-full border border-stone/30">
                 <span className="text-xs sm:text-sm text-mushroom flex-1">Ask Cortex anything...</span>
-                <div className="w-8 h-8 sm:w-9 sm:h-9 rounded-full bg-forest flex items-center justify-center">
+                <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-forest flex items-center justify-center">
                   <ArrowRight size={14} className="text-white" />
                 </div>
               </div>

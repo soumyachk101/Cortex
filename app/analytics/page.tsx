@@ -90,7 +90,7 @@ export default function AnalyticsPage() {
           >
             <ChevronLeft size={18} strokeWidth={1.5} />
           </button>
-          <span className="font-serif text-xl text-forest min-w-[200px] text-center">
+          <span className="font-serif text-xl text-forest min-w-[140px] sm:min-w-[200px] text-center">
             {selectedMonth.toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
           </span>
           <button
