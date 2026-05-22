@@ -17,14 +17,30 @@ function encodeModel(provider: string, modelId: string) {
   return provider === 'groq' ? `groq:${modelId}` : modelId;
 }
 
+// Parse API keys from gemini_api_key column (may be JSON or plain string)
+function parseKeys(raw: string): { gemini: string; groq: string } {
+  if (!raw) return { gemini: '', groq: '' };
+  try {
+    const parsed = JSON.parse(raw);
+    if (typeof parsed === 'object' && parsed !== null) {
+      return { gemini: parsed.gemini || '', groq: parsed.groq || '' };
+    }
+  } catch {}
+  // Legacy: plain string = gemini key
+  return { gemini: raw, groq: '' };
+}
+function encodeKeys(gemini: string, groq: string): string {
+  return JSON.stringify({ gemini, groq });
+}
+
 export default function SettingsPage() {
   const [userId, setUserId] = useState<string>();
   const [currency, setCurrency] = useState('₹');
   const [budget, setBudget] = useState(0);
-  const [apiKey, setApiKey] = useState('');
+  const [geminiKey, setGeminiKey] = useState('');
+  const [groqKey, setGroqKey] = useState('');
   const [provider, setProvider] = useState('gemini');
   const [modelId, setModelId] = useState('gemini-2.0-flash');
-  const [themeLoaded, setThemeLoaded] = useState(false);
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
@@ -47,15 +63,22 @@ export default function SettingsPage() {
           if (data) {
             setCurrency(data.currency_symbol || '₹');
             setBudget(data.budget_limit || 0);
-            setApiKey(data.gemini_api_key || '');
+            const keys = parseKeys(data.gemini_api_key || '');
+            setGeminiKey(keys.gemini);
+            setGroqKey(keys.groq);
             const parsed = parseModel(data.selected_model || 'gemini-2.0-flash');
             setProvider(parsed.provider);
             setModelId(parsed.modelId);
-            setThemeLoaded(true);
           }
         });
     });
   }, []);
+
+  function saveKeys(newGemini: string, newGroq: string) {
+    if (!userId) return;
+    const encoded = encodeKeys(newGemini, newGroq);
+    supabase.from('user_settings').upsert({ user_id: userId, gemini_api_key: encoded });
+  }
 
   async function save(key: string, value: any) {
     if (!userId) return;
@@ -66,21 +89,22 @@ export default function SettingsPage() {
   if (!userId) return null;
 
   const currentModel = ALL_MODELS.find(m => m.id === modelId) || ALL_MODELS[0];
-  const hasApiKey = !!apiKey;
+  const currentKey = provider === 'groq' ? groqKey : geminiKey;
+  const hasApiKey = !!currentKey;
 
   function SettingRow({ icon: Icon, iconBg, label, value, onClick }: any) {
     return (
-      <button onClick={onClick} className="flex items-center justify-between p-5 w-full hover:bg-cream/50 transition-colors duration-300 group">
-        <div className="flex items-center gap-4">
-          <div className={`w-11 h-11 rounded-full ${iconBg} flex items-center justify-center`}>
+      <button onClick={onClick} className="flex items-center justify-between p-4 sm:p-5 w-full hover:bg-cream/50 transition-colors duration-300 group">
+        <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+          <div className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full ${iconBg} flex items-center justify-center flex-shrink-0`}>
             <Icon size={18} strokeWidth={1.5} />
           </div>
-          <div className="text-left">
-            <p className="font-medium text-forest">{label}</p>
-            <p className="text-sm text-mushroom mt-0.5">{value}</p>
+          <div className="text-left min-w-0">
+            <p className="font-medium text-forest text-sm sm:text-base">{label}</p>
+            <p className="text-xs sm:text-sm text-mushroom mt-0.5 truncate">{value}</p>
           </div>
         </div>
-        <ChevronRight size={18} strokeWidth={1.5} className="text-mushroom group-hover:text-sage transition-colors duration-300" />
+        <ChevronRight size={18} strokeWidth={1.5} className="text-mushroom flex-shrink-0 group-hover:text-sage transition-colors duration-300" />
       </button>
     );
   }
@@ -157,8 +181,8 @@ export default function SettingsPage() {
             icon={Key}
             iconBg="bg-sage/10 text-sage"
             label={`${provider === 'groq' ? 'Groq' : 'Gemini'} API Key`}
-            value={apiKey ? `${apiKey.substring(0, 10)}...` : 'Not set'}
-            onClick={() => { setApiKeyInput(apiKey || ''); setShowApiKeyModal(true); }}
+            value={currentKey ? `${currentKey.substring(0, 12)}...` : 'Not set'}
+            onClick={() => { setApiKeyInput(currentKey || ''); setShowApiKeyModal(true); }}
           />
           <div className="h-px bg-stone/50 mx-5" />
           <SettingRow
@@ -251,8 +275,13 @@ export default function SettingsPage() {
             <div className="flex gap-3">
               <button onClick={() => setShowApiKeyModal(false)} className="btn-botanical-secondary flex-1">Cancel</button>
               <button onClick={() => {
-                setApiKey(apiKeyInput);
-                save('gemini_api_key', apiKeyInput);
+                if (provider === 'groq') {
+                  setGroqKey(apiKeyInput);
+                  saveKeys(geminiKey, apiKeyInput);
+                } else {
+                  setGeminiKey(apiKeyInput);
+                  saveKeys(apiKeyInput, groqKey);
+                }
                 setShowApiKeyModal(false);
               }} className="btn-botanical flex-1">Save</button>
             </div>

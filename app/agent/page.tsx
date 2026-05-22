@@ -58,16 +58,31 @@ export default function AgentPage() {
         .maybeSingle();
 
       if (data) {
-        setApiKey(data.gemini_api_key || '');
         // Decode provider from model string: "groq:llama-3.3-70b-versatile" or "gemini-2.0-flash"
         const raw = data.selected_model || 'gemini-2.0-flash';
+        let p = 'gemini';
+        let m = raw;
         if (raw.startsWith('groq:')) {
-          setProvider('groq');
-          setModelId(raw.replace('groq:', ''));
-        } else {
-          setProvider('gemini');
-          setModelId(raw);
+          p = 'groq';
+          m = raw.replace('groq:', '');
         }
+        setProvider(p);
+        setModelId(m);
+
+        // Parse API keys (may be JSON with both keys or plain string for legacy)
+        const rawKey = data.gemini_api_key || '';
+        let key = '';
+        try {
+          const parsed = JSON.parse(rawKey);
+          if (typeof parsed === 'object' && parsed !== null) {
+            key = p === 'groq' ? (parsed.groq || '') : (parsed.gemini || '');
+          } else {
+            key = rawKey;
+          }
+        } catch {
+          key = rawKey; // Legacy plain string
+        }
+        setApiKey(key);
       }
     });
   }, []);
