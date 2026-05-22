@@ -50,32 +50,24 @@ export default function AgentPage() {
       if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
 
-      // Try loading with new columns first, fall back to old schema
-      let data: any = null;
-      let { data: d1, error: e1 } = await supabase
+      // Use only original columns that exist in DB
+      const { data } = await supabase
         .from('user_settings')
-        .select('gemini_api_key, groq_api_key, selected_model, ai_provider')
+        .select('gemini_api_key, selected_model')
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (e1 || !d1) {
-        // Fallback: old schema without groq columns
-        const { data: d2 } = await supabase
-          .from('user_settings')
-          .select('gemini_api_key, selected_model')
-          .eq('user_id', user.id)
-          .maybeSingle();
-        data = d2;
-      } else {
-        data = d1;
-      }
-
       if (data) {
-        const p = data.ai_provider || 'gemini';
-        setProvider(p);
-        const key = p === 'groq' ? (data.groq_api_key || '') : (data.gemini_api_key || '');
-        setApiKey(key);
-        setModelId(data.selected_model || 'gemini-2.0-flash');
+        setApiKey(data.gemini_api_key || '');
+        // Decode provider from model string: "groq:llama-3.3-70b-versatile" or "gemini-2.0-flash"
+        const raw = data.selected_model || 'gemini-2.0-flash';
+        if (raw.startsWith('groq:')) {
+          setProvider('groq');
+          setModelId(raw.replace('groq:', ''));
+        } else {
+          setProvider('gemini');
+          setModelId(raw);
+        }
       }
     });
   }, []);
