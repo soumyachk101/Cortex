@@ -56,21 +56,21 @@ export const CHART_COLORS = [
 
 export const GEMINI_MODELS: AIModel[] = [
   {
+    id: 'gemini-1.5-flash',
+    name: 'Gemini 1.5 Flash (Free & Stable)',
+    description: 'Recommended: Most reliable, 1M token context window',
+    provider: 'gemini',
+  },
+  {
     id: 'gemini-2.0-flash',
     name: 'Gemini 2.0 Flash (Free)',
-    description: 'Recommended: Fast, accurate function calling',
+    description: 'Fast, accurate function calling',
     provider: 'gemini',
   },
   {
     id: 'gemini-2.0-flash-lite',
     name: 'Gemini 2.0 Flash Lite (Free)',
     description: 'Ultra-fast, highest request limits (30 RPM)',
-    provider: 'gemini',
-  },
-  {
-    id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash (Free)',
-    description: 'Production stable, 1M token context window',
     provider: 'gemini',
   },
   {
@@ -116,7 +116,7 @@ export const GROQ_MODELS: AIModel[] = [
 
 export const ALL_MODELS = [...GEMINI_MODELS, ...GROQ_MODELS];
 
-export const DEFAULT_MODEL_ID = 'gemini-2.0-flash';
+export const DEFAULT_MODEL_ID = 'gemini-1.5-flash';
 
 export const CURRENCIES = ['₹', '$', '€', '£', '¥', '₩', '₽', '₺', 'R$', 'A$'];
 
