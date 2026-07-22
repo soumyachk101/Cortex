@@ -194,12 +194,34 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
   }
 }
 
-// Gemini handler
-async function handleGemini(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string) {
+async function runGeminiChat(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string) {
   const genAI = new GoogleGenerativeAI(apiKey);
   const model = genAI.getGenerativeModel({ model: modelId, tools, systemInstruction: systemPrompt });
 
-  const chat = model.startChat({ history: history.length > 0 ? history : [] });
+  // Sanitize history for Gemini SDK
+  const sanitizedHistory: any[] = [];
+  for (const h of history || []) {
+    if (!h) continue;
+    const role = h.role === 'assistant' || h.role === 'model' ? 'model' : 'user';
+    const textContent = Array.isArray(h.parts)
+      ? h.parts.map((p: any) => (typeof p === 'string' ? p : p?.text || '')).filter(Boolean).join('\n')
+      : (typeof h.content === 'string' ? h.content : '');
+
+    if (textContent.trim()) {
+      const last = sanitizedHistory[sanitizedHistory.length - 1];
+      if (last && last.role === role) {
+        last.parts[0].text += `\n${textContent}`;
+      } else {
+        sanitizedHistory.push({ role, parts: [{ text: textContent }] });
+      }
+    }
+  }
+
+  if (sanitizedHistory.length > 0 && sanitizedHistory[0].role !== 'user') {
+    sanitizedHistory.shift();
+  }
+
+  const chat = model.startChat({ history: sanitizedHistory });
   const result = await chat.sendMessage(message);
   let response = result.response;
 
@@ -216,9 +238,37 @@ async function handleGemini(message: string, history: any[], userId: string, sup
     safety++;
   }
 
-  const text = response.text() || 'I processed your request.';
-  const updatedHistory = await chat.getHistory();
+  let text = '';
+  try {
+    text = response.text() || '';
+  } catch {
+    text = response.candidates?.[0]?.content?.parts?.map((p: any) => p.text).filter(Boolean).join('\n') || '';
+  }
+  if (!text && !response.functionCalls()?.[0]) {
+    text = 'I processed your request.';
+  }
+
+  let updatedHistory: any[] = [];
+  try {
+    updatedHistory = await chat.getHistory();
+  } catch {
+    updatedHistory = [...sanitizedHistory, { role: 'user', parts: [{ text: message }] }, { role: 'model', parts: [{ text }] }];
+  }
+
   return { text, history: updatedHistory };
+}
+
+// Gemini handler with automatic fallback
+async function handleGemini(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string) {
+  try {
+    return await runGeminiChat(message, history, userId, supabase, apiKey, modelId);
+  } catch (err: any) {
+    console.warn(`Gemini model "${modelId}" error: ${err.message}. Retrying with "gemini-1.5-flash"...`);
+    if (modelId !== 'gemini-1.5-flash') {
+      return await runGeminiChat(message, history, userId, supabase, apiKey, 'gemini-1.5-flash');
+    }
+    throw err;
+  }
 }
 
 // Groq handler
@@ -316,7 +366,7 @@ export async function POST(request: NextRequest) {
     if (aiProvider === 'groq') {
       result = await handleGroq(message, history || [], user.id, supabase, apiKey, modelId || 'llama-3.3-70b-versatile');
     } else {
-      result = await handleGemini(message, history || [], user.id, supabase, apiKey, modelId || 'gemini-2.0-flash');
+      result = await handleGemini(message, history || [], user.id, supabase, apiKey, modelId || 'gemini-1.5-flash');
     }
 
     // Store in context (chat_messages)
