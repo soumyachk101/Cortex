@@ -1,7 +1,6 @@
 import type { Metadata } from 'next';
 import { Playfair_Display, Source_Sans_3 } from 'next/font/google';
 import { ThemeProvider } from '@/providers/theme-provider';
-import { FirebaseProvider } from '@/providers/firebase-provider';
 import './globals.css';
 
 const playfair = Playfair_Display({
@@ -30,7 +29,6 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning className={`${playfair.variable} ${sourceSans.variable}`}>
       <body className="font-sans antialiased bg-alabaster text-forest">
         <ThemeProvider>
-          <FirebaseProvider>
           {/* Paper Grain Texture Overlay */}
           <div
             className="pointer-events-none fixed inset-0 z-50 opacity-[0.015]"
@@ -40,7 +38,6 @@ export default function RootLayout({
             }}
           />
           {children}
-          </FirebaseProvider>
         </ThemeProvider>
       </body>
     </html>
