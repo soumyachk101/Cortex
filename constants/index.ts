@@ -57,38 +57,32 @@ export const CHART_COLORS = [
 export const GEMINI_MODELS: AIModel[] = [
   {
     id: 'gemini-2.0-flash',
-    name: 'Gemini 2.0 Flash',
-    description: 'Fast, balanced performance',
-    provider: 'gemini',
-  },
-  {
-    id: 'gemini-2.5-flash',
-    name: 'Gemini 2.5 Flash',
-    description: 'Latest fast model with thinking',
-    provider: 'gemini',
-  },
-  {
-    id: 'gemini-2.5-pro',
-    name: 'Gemini 2.5 Pro',
-    description: 'Most capable, complex reasoning',
+    name: 'Gemini 2.0 Flash (Free)',
+    description: 'Recommended: Fast, accurate function calling',
     provider: 'gemini',
   },
   {
     id: 'gemini-2.0-flash-lite',
-    name: 'Gemini 2.0 Flash Lite',
-    description: 'Lightweight, fastest responses',
+    name: 'Gemini 2.0 Flash Lite (Free)',
+    description: 'Ultra-fast, highest request limits (30 RPM)',
     provider: 'gemini',
   },
   {
     id: 'gemini-1.5-flash',
-    name: 'Gemini 1.5 Flash',
-    description: 'Previous gen, reliable',
+    name: 'Gemini 1.5 Flash (Free)',
+    description: 'Production stable, 1M token context window',
     provider: 'gemini',
   },
   {
     id: 'gemini-1.5-pro',
-    name: 'Gemini 1.5 Pro',
-    description: 'Previous gen, most capable',
+    name: 'Gemini 1.5 Pro (Free)',
+    description: 'Deep reasoning, 2M context (2 RPM limit)',
+    provider: 'gemini',
+  },
+  {
+    id: 'gemini-2.0-pro-exp-02-05',
+    name: 'Gemini 2.0 Pro Exp (Free)',
+    description: 'Experimental Pro model with advanced reasoning',
     provider: 'gemini',
   },
 ];
@@ -96,26 +90,26 @@ export const GEMINI_MODELS: AIModel[] = [
 export const GROQ_MODELS: AIModel[] = [
   {
     id: 'llama-3.3-70b-versatile',
-    name: 'Llama 3.3 70B',
-    description: 'Best quality, versatile reasoning',
+    name: 'Llama 3.3 70B (Free)',
+    description: 'Recommended Groq: Meta top 70B model, great tool calling',
     provider: 'groq',
   },
   {
     id: 'llama-3.1-8b-instant',
-    name: 'Llama 3.1 8B',
-    description: 'Ultra-fast responses',
+    name: 'Llama 3.1 8B (Free)',
+    description: 'Ultra-fast responses (~500 tokens/sec)',
     provider: 'groq',
   },
   {
     id: 'mixtral-8x7b-32768',
-    name: 'Mixtral 8x7B',
-    description: 'Large context, balanced',
+    name: 'Mixtral 8x7B (Free)',
+    description: 'Mistral 32k context MoE model',
     provider: 'groq',
   },
   {
     id: 'gemma2-9b-it',
-    name: 'Gemma 2 9B',
-    description: 'Google model, fast inference',
+    name: 'Gemma 2 9B (Free)',
+    description: 'Google Gemma 2 running on Groq LPU speed',
     provider: 'groq',
   },
 ];

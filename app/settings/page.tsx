@@ -8,10 +8,14 @@ import { GEMINI_MODELS, GROQ_MODELS, ALL_MODELS, CURRENCIES } from '@/constants'
 import { useTheme } from 'next-themes';
 import { Moon, Sun, Key, Bot, Wallet, Info, Check, ChevronRight, Zap } from 'lucide-react';
 
-// Encode provider into model: "groq:llama-3.3-70b-versatile" or "gemini-2.0-flash"
 function parseModel(raw: string) {
-  if (raw?.startsWith('groq:')) return { provider: 'groq', modelId: raw.replace('groq:', '') };
-  return { provider: 'gemini', modelId: raw || 'gemini-2.0-flash' };
+  if (raw?.startsWith('groq:')) {
+    const m = raw.replace('groq:', '');
+    const valid = GROQ_MODELS.some(x => x.id === m);
+    return { provider: 'groq', modelId: valid ? m : 'llama-3.3-70b-versatile' };
+  }
+  const valid = GEMINI_MODELS.some(x => x.id === raw);
+  return { provider: 'gemini', modelId: valid ? raw : 'gemini-2.0-flash' };
 }
 function encodeModel(provider: string, modelId: string) {
   return provider === 'groq' ? `groq:${modelId}` : modelId;
