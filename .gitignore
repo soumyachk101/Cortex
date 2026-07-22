@@ -24,6 +24,7 @@ next-env.d.ts
 .idea/
 .vscode/
 *.iml
+.antigravitycli
 
 # Supabase
 supabase/.temp/
