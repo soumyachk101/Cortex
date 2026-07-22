@@ -138,27 +138,26 @@ export default function DashboardPage() {
 
         {/* Category Chart */}
         {chartData.length > 0 && (
-          <div className="card-botanical p-8 mb-12">
-            <h2 className="font-serif text-2xl font-semibold text-forest mb-8">Spending by Category</h2>
-            <div className="flex flex-col md:flex-row items-center gap-10">
-              <div className="w-52 h-52">
-                <ResponsiveContainer>
+          <div className="card-botanical p-6 sm:p-8 mb-12">
+            <h2 className="font-serif text-xl sm:text-2xl font-semibold text-forest mb-6 sm:mb-8">Spending by Category</h2>
+            <div className="flex flex-col md:flex-row items-center gap-6 md:gap-10">
+              <div className="w-48 h-48 sm:w-56 sm:h-56 relative flex-shrink-0">
+                <ResponsiveContainer width="100%" height="100%">
                   <PieChart>
                     <Pie
                       data={chartData}
                       dataKey="value"
                       cx="50%"
                       cy="50%"
-                      outerRadius={85}
-                      innerRadius={40}
+                      outerRadius={80}
+                      innerRadius={42}
                       strokeWidth={2}
                       stroke="#F9F8F4"
-                      label={({ name, percent }) => `${name} ${(percent * 100).toFixed(0)}%`}
                     >
-                      {chartData.map((_, i) => (
+                      {chartData.map((d) => (
                         <Cell
-                          key={i}
-                          fill={Object.values(CATEGORY_COLORS)[i % Object.values(CATEGORY_COLORS).length]}
+                          key={d.name}
+                          fill={CATEGORY_COLORS[d.name as keyof typeof CATEGORY_COLORS] || '#8C9A84'}
                         />
                       ))}
                     </Pie>
@@ -174,17 +173,23 @@ export default function DashboardPage() {
                   </PieChart>
                 </ResponsiveContainer>
               </div>
-              <div className="flex flex-wrap gap-x-6 gap-y-3">
-                {chartData.map((d, i) => (
-                  <div key={d.name} className="flex items-center gap-2.5 text-sm">
-                    <div
-                      className="w-3 h-3 rounded-full"
-                      style={{ backgroundColor: Object.values(CATEGORY_COLORS)[i % Object.values(CATEGORY_COLORS).length] }}
-                    />
-                    <span className="text-forest">{d.name}</span>
-                    <span className="text-text-secondary">{currency}{d.value.toFixed(0)}</span>
-                  </div>
-                ))}
+              <div className="flex-1 w-full grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
+                {chartData.map((d) => {
+                  const color = CATEGORY_COLORS[d.name as keyof typeof CATEGORY_COLORS] || '#8C9A84';
+                  const percent = totalSpent > 0 ? ((d.value / totalSpent) * 100).toFixed(0) : '0';
+                  return (
+                    <div key={d.name} className="flex items-center justify-between p-3.5 rounded-2xl bg-cream/50 border border-stone/30">
+                      <div className="flex items-center gap-2.5 min-w-0">
+                        <div className="w-3 h-3 rounded-full flex-shrink-0" style={{ backgroundColor: color }} />
+                        <span className="text-sm font-medium text-forest truncate">{d.name}</span>
+                      </div>
+                      <div className="flex items-center gap-2 flex-shrink-0 text-xs sm:text-sm">
+                        <span className="font-medium text-forest">{currency}{d.value.toFixed(0)}</span>
+                        <span className="text-mushroom text-xs">({percent}%)</span>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
             </div>
           </div>

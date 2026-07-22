@@ -6,12 +6,16 @@ import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { GEMINI_MODELS, GROQ_MODELS, ALL_MODELS, CURRENCIES } from '@/constants';
 import { useTheme } from 'next-themes';
-import { Moon, Sun, Key, Bot, Wallet, Info, Check, ChevronRight, Zap } from 'lucide-react';
+import { Moon, Sun, Key, Bot, Wallet, Info, Check, ChevronRight, Zap, User, Mail } from 'lucide-react';
 
-// Encode provider into model: "groq:llama-3.3-70b-versatile" or "gemini-2.0-flash"
 function parseModel(raw: string) {
-  if (raw?.startsWith('groq:')) return { provider: 'groq', modelId: raw.replace('groq:', '') };
-  return { provider: 'gemini', modelId: raw || 'gemini-2.0-flash' };
+  if (raw?.startsWith('groq:')) {
+    const m = raw.replace('groq:', '');
+    const valid = GROQ_MODELS.some(x => x.id === m);
+    return { provider: 'groq', modelId: valid ? m : 'llama-3.3-70b-versatile' };
+  }
+  const valid = GEMINI_MODELS.some(x => x.id === raw);
+  return { provider: 'gemini', modelId: valid ? raw : 'gemini-2.5-flash' };
 }
 function encodeModel(provider: string, modelId: string) {
   return provider === 'groq' ? `groq:${modelId}` : modelId;
@@ -35,12 +39,19 @@ function encodeKeys(gemini: string, groq: string): string {
 
 export default function SettingsPage() {
   const [userId, setUserId] = useState<string>();
+  const [userEmail, setUserEmail] = useState('');
+  const [authProvider, setAuthProvider] = useState<'google' | 'email'>('email');
+  const [displayName, setDisplayName] = useState('');
+  const [showNameModal, setShowNameModal] = useState(false);
+  const [nameInput, setNameInput] = useState('');
+  const [savingName, setSavingName] = useState(false);
+
   const [currency, setCurrency] = useState('₹');
   const [budget, setBudget] = useState(0);
   const [geminiKey, setGeminiKey] = useState('');
   const [groqKey, setGroqKey] = useState('');
   const [provider, setProvider] = useState('gemini');
-  const [modelId, setModelId] = useState('gemini-2.0-flash');
+  const [modelId, setModelId] = useState('gemini-2.5-flash');
   const [showModelPicker, setShowModelPicker] = useState(false);
   const [showCurrencyPicker, setShowCurrencyPicker] = useState(false);
   const [budgetInput, setBudgetInput] = useState('');
@@ -55,6 +66,16 @@ export default function SettingsPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
+      setUserEmail(user.email || '');
+
+      // Determine sign-in provider
+      const prov = user.app_metadata?.provider || user.identities?.[0]?.provider || 'email';
+      setAuthProvider(prov === 'google' ? 'google' : 'email');
+
+      // Determine profile display name
+      const name = user.user_metadata?.full_name || user.user_metadata?.name || user.email?.split('@')[0] || 'User';
+      setDisplayName(name);
+      setNameInput(name);
 
       // Ensure row exists
       await supabase.from('user_settings').upsert(
@@ -75,12 +96,33 @@ export default function SettingsPage() {
         const keys = parseKeys(data.gemini_api_key || '');
         setGeminiKey(keys.gemini);
         setGroqKey(keys.groq);
-        const parsed = parseModel(data.selected_model || 'gemini-2.0-flash');
+        const parsed = parseModel(data.selected_model || 'gemini-2.5-flash');
         setProvider(parsed.provider);
         setModelId(parsed.modelId);
       }
     });
   }, []);
+
+  async function handleSaveName() {
+    if (!nameInput.trim()) return;
+    setSavingName(true);
+    try {
+      const newName = nameInput.trim();
+      const { error } = await supabase.auth.updateUser({
+        data: { full_name: newName, name: newName }
+      });
+      if (error) {
+        alert(`Error updating profile name: ${error.message}`);
+      } else {
+        setDisplayName(newName);
+        setShowNameModal(false);
+      }
+    } catch (e: any) {
+      alert(`Error: ${e.message}`);
+    } finally {
+      setSavingName(false);
+    }
+  }
 
   async function saveKeys(newGemini: string, newGroq: string) {
     if (!userId) return;
@@ -146,6 +188,56 @@ export default function SettingsPage() {
           <p className="text-text-secondary mt-1 tracking-wide text-sm sm:text-base">Customize your experience</p>
         </div>
 
+        {/* Account & Profile */}
+        <h2 className="text-[10px] sm:text-xs font-semibold text-sage mb-3 sm:mb-4 tracking-[0.2em] uppercase">Account & Profile</h2>
+        <div className="bg-white rounded-card border border-stone/50 mb-6 sm:mb-8 overflow-hidden">
+          <SettingRow
+            icon={User}
+            iconBg="bg-sage/10 text-sage"
+            label="Profile Name"
+            value={displayName || 'Not set'}
+            onClick={() => { setNameInput(displayName); setShowNameModal(true); }}
+          />
+          <div className="h-px bg-stone/50 mx-5" />
+          <div className="flex items-center justify-between p-4 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-cream flex items-center justify-center flex-shrink-0">
+                <Mail size={18} strokeWidth={1.5} className="text-forest" />
+              </div>
+              <div className="text-left min-w-0">
+                <p className="font-medium text-forest text-sm sm:text-base">Email Address</p>
+                <p className="text-xs sm:text-sm text-mushroom mt-0.5 truncate">{userEmail}</p>
+              </div>
+            </div>
+          </div>
+          <div className="h-px bg-stone/50 mx-5" />
+          <div className="flex items-center justify-between p-4 sm:p-5">
+            <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+              <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-cream flex items-center justify-center flex-shrink-0">
+                {authProvider === 'google' ? (
+                  <svg width="18" height="18" viewBox="0 0 24 24">
+                    <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92a5.06 5.06 0 01-2.2 3.32v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.1z" fill="#4285F4"/>
+                    <path d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z" fill="#34A853"/>
+                    <path d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z" fill="#FBBC05"/>
+                    <path d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z" fill="#EA4335"/>
+                  </svg>
+                ) : (
+                  <Mail size={18} strokeWidth={1.5} className="text-sage" />
+                )}
+              </div>
+              <div className="text-left min-w-0">
+                <p className="font-medium text-forest text-sm sm:text-base">Sign-In Method</p>
+                <p className="text-xs sm:text-sm text-mushroom mt-0.5">
+                  {authProvider === 'google' ? 'Google Account' : 'Email & Password'}
+                </p>
+              </div>
+            </div>
+            <span className="text-xs px-3 py-1 rounded-full bg-sage/10 text-sage font-medium">
+              {authProvider === 'google' ? 'Google Login' : 'Email Login'}
+            </span>
+          </div>
+        </div>
+
         {/* Appearance */}
         <h2 className="text-[10px] sm:text-xs font-semibold text-sage mb-3 sm:mb-4 tracking-[0.2em] uppercase">Appearance</h2>
         <div className="bg-white rounded-card border border-stone/50 mb-6 sm:mb-8 overflow-hidden">
@@ -186,8 +278,8 @@ export default function SettingsPage() {
               <button
                 onClick={() => {
                   setProvider('gemini');
-                  setModelId('gemini-2.0-flash');
-                  save('selected_model', 'gemini-2.0-flash');
+                  setModelId('gemini-2.5-flash');
+                  save('selected_model', 'gemini-2.5-flash');
                 }}
                 className={`flex-1 flex items-center justify-center gap-2 py-2.5 rounded-full text-sm font-medium transition-all duration-300 ${provider === 'gemini' ? 'bg-white text-forest shadow-botanical' : 'text-text-secondary'}`}
               >
@@ -332,6 +424,30 @@ export default function SettingsPage() {
             <div className="flex gap-3">
               <button onClick={() => { setBudget(0); save('budget_limit', 0); setShowBudgetModal(false); }} className="btn-botanical-secondary flex-1 text-terracotta border-terracotta/30">Remove</button>
               <button onClick={() => { const v = parseFloat(budgetInput); if (!isNaN(v) && v > 0) { setBudget(v); save('budget_limit', v); } setShowBudgetModal(false); }} className="btn-botanical flex-1">Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+      {/* Profile Name Modal */}
+      {showNameModal && (
+        <div className="fixed inset-0 bg-forest/20 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 z-40" onClick={() => setShowNameModal(false)}>
+          <div className="bg-white w-full max-w-lg rounded-3xl p-6 sm:p-8 border border-stone/50 shadow-botanical-lg flex flex-col max-h-[90dvh] overflow-y-auto" onClick={e => e.stopPropagation()}>
+            <div className="w-10 h-1 bg-stone rounded-full mx-auto mb-6" />
+            <h2 className="font-serif text-xl sm:text-2xl font-semibold text-forest mb-2">Edit Profile Name</h2>
+            <p className="text-sm text-mushroom mb-6">Change how your name appears in Cortex</p>
+            <input
+              type="text"
+              value={nameInput}
+              onChange={e => setNameInput(e.target.value)}
+              onKeyDown={e => e.key === 'Enter' && handleSaveName()}
+              className="input-botanical mb-6"
+              placeholder="Your full name"
+            />
+            <div className="flex gap-3">
+              <button onClick={() => setShowNameModal(false)} className="btn-botanical-secondary flex-1">Cancel</button>
+              <button onClick={handleSaveName} disabled={savingName || !nameInput.trim()} className="btn-botanical flex-1">
+                {savingName ? 'Saving...' : 'Save Name'}
+              </button>
             </div>
           </div>
         </div>

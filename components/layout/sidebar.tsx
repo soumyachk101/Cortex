@@ -29,6 +29,13 @@ const NAV_ITEMS = [
 export function Sidebar() {
   const pathname = usePathname();
 
+  async function handleSignOut() {
+    const { createClient } = await import('@/lib/supabase/client');
+    const supabase = createClient();
+    await supabase.auth.signOut();
+    window.location.href = '/signin';
+  }
+
   return (
     <aside className="hidden lg:flex flex-col w-72 h-screen fixed left-0 top-0 bg-white border-r border-stone/50">
       {/* Logo */}
@@ -75,15 +82,14 @@ export function Sidebar() {
 
       {/* Logout */}
       <div className="p-4">
-        <form action="/auth/signout" method="post">
-          <button
-            type="submit"
-            className="flex items-center gap-4 px-5 py-3.5 rounded-2xl w-full text-text-secondary hover:bg-cream hover:text-forest transition-all duration-300 group"
-          >
-            <LogOut size={20} strokeWidth={1.5} className="text-mushroom group-hover:text-terracotta transition-colors duration-300" />
-            <span className="tracking-wide">Sign Out</span>
-          </button>
-        </form>
+        <button
+          onClick={handleSignOut}
+          type="button"
+          className="flex items-center gap-4 px-5 py-3.5 rounded-2xl w-full text-text-secondary hover:bg-cream hover:text-forest transition-all duration-300 group"
+        >
+          <LogOut size={20} strokeWidth={1.5} className="text-mushroom group-hover:text-terracotta transition-colors duration-300" />
+          <span className="tracking-wide">Sign Out</span>
+        </button>
       </div>
     </aside>
   );

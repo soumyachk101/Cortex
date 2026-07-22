@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { ALL_MODELS } from '@/constants';
+import { ALL_MODELS, GEMINI_MODELS, GROQ_MODELS } from '@/constants';
 import { Send, Trash2, Sparkles, Copy, Check, Wallet, CheckSquare, BarChart3, StickyNote } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -33,7 +33,7 @@ const SUGGESTED_PROMPTS = [
 export default function AgentPage() {
   const [userId, setUserId] = useState<string>();
   const [apiKey, setApiKey] = useState('');
-  const [modelId, setModelId] = useState('gemini-2.0-flash');
+  const [modelId, setModelId] = useState('gemini-2.5-flash');
   const [provider, setProvider] = useState('gemini');
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -58,13 +58,16 @@ export default function AgentPage() {
         .maybeSingle();
 
       if (data) {
-        // Decode provider from model string: "groq:llama-3.3-70b-versatile" or "gemini-2.0-flash"
-        const raw = data.selected_model || 'gemini-2.0-flash';
+        // Decode provider from model string: "groq:llama-3.3-70b-versatile" or "gemini-2.5-flash"
+        const raw = data.selected_model || 'gemini-2.5-flash';
         let p = 'gemini';
         let m = raw;
         if (raw.startsWith('groq:')) {
           p = 'groq';
-          m = raw.replace('groq:', '');
+          const extracted = raw.replace('groq:', '');
+          m = GROQ_MODELS.some(x => x.id === extracted) ? extracted : 'llama-3.3-70b-versatile';
+        } else {
+          m = GEMINI_MODELS.some(x => x.id === raw) ? raw : 'gemini-2.5-flash';
         }
         setProvider(p);
         setModelId(m);
@@ -80,9 +83,46 @@ export default function AgentPage() {
             key = p === 'gemini' ? rawKey : '';
           }
         } catch {
-          key = p === 'gemini' ? rawKey : ''; // Legacy plain string is Gemini key
+          key = p === 'gemini' ? rawKey : '';
         }
         setApiKey(key.trim());
+      }
+
+      try {
+        const { data: session } = await supabase
+          .from('chat_sessions')
+          .select('id')
+          .eq('user_id', user.id)
+          .order('updated_at', { ascending: false })
+          .limit(1)
+          .maybeSingle();
+
+        if (session) {
+          const { data: storedMsgs } = await supabase
+            .from('chat_messages')
+            .select('id, role, content, created_at')
+            .eq('session_id', session.id)
+            .order('created_at', { ascending: true });
+
+          if (storedMsgs && storedMsgs.length > 0) {
+            setMessages(
+              storedMsgs.map(m => ({
+                id: m.id,
+                text: m.content,
+                isUser: m.role === 'user',
+                timestamp: new Date(m.created_at),
+              }))
+            );
+            setHistory(
+              storedMsgs.map(m => ({
+                role: m.role === 'assistant' ? 'model' : 'user',
+                parts: [{ text: m.content }],
+              }))
+            );
+          }
+        }
+      } catch (e) {
+        console.warn('Failed to load chat history:', e);
       }
     });
   }, []);
@@ -95,9 +135,26 @@ export default function AgentPage() {
 
   async function send(text?: string) {
     const msg = text || input;
-    if (!msg.trim() || !apiKey) return;
-    const userMsg: Message = { id: Date.now().toString(), text: msg, isUser: true, timestamp: new Date() };
-    setMessages(prev => [...prev, userMsg]);
+    if (!msg.trim() || isTyping) return;
+
+    if (!apiKey) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: 'Please set your API key in **Settings** to chat with Cortex AI.',
+        isUser: false,
+        timestamp: new Date(),
+      }]);
+      return;
+    }
+
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: msg,
+      isUser: true,
+      timestamp: new Date(),
+    };
+
+    setMessages(prev => [...prev, userMessage]);
     setInput('');
     setIsTyping(true);
 
@@ -105,27 +162,66 @@ export default function AgentPage() {
       const res = await fetch('/api/agent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ message: msg, history, modelId, apiKey, provider }),
+        body: JSON.stringify({
+          message: msg,
+          history,
+          modelId,
+          apiKey,
+          provider,
+        }),
       });
+
       const data = await res.json();
       if (data.error) {
-        setMessages(prev => [...prev, { id: Date.now().toString(), text: `Error: ${data.error}`, isUser: false, timestamp: new Date() }]);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: `Error: ${data.error}`,
+          isUser: false,
+          timestamp: new Date(),
+        }]);
       } else {
         const lastToolCall = data.history?.findLast?.((h: any) => h.parts?.some((p: any) => p.functionCall));
         const toolName = lastToolCall?.parts?.find((p: any) => p.functionCall)?.functionCall?.name;
-        setMessages(prev => [...prev, { id: Date.now().toString(), text: data.text, isUser: false, toolUsed: toolName, timestamp: new Date() }]);
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: data.text,
+          isUser: false,
+          toolUsed: toolName,
+          timestamp: new Date(),
+        }]);
         setHistory(data.history || []);
       }
     } catch (e: any) {
-      setMessages(prev => [...prev, { id: Date.now().toString(), text: `Error: ${e.message}`, isUser: false, timestamp: new Date() }]);
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: `Error: ${e.message}`,
+        isUser: false,
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setIsTyping(false);
+      inputRef.current?.focus();
     }
-    setIsTyping(false);
-    inputRef.current?.focus();
   }
 
-  function clearContext() {
+  async function clearContext() {
     setMessages([]);
     setHistory([]);
+    if (userId) {
+      try {
+        const { data: sessions } = await supabase
+          .from('chat_sessions')
+          .select('id')
+          .eq('user_id', userId);
+        if (sessions && sessions.length > 0) {
+          const sessionIds = sessions.map(s => s.id);
+          await supabase.from('chat_messages').delete().in('session_id', sessionIds);
+          await supabase.from('chat_sessions').delete().eq('user_id', userId);
+        }
+      } catch (e) {
+        console.warn('Failed to delete stored chat history:', e);
+      }
+    }
   }
 
   function copyMessage(text: string, id: string) {
