@@ -128,15 +128,20 @@ export function MobileNav() {
         <div className="border-t border-stone/30 my-4" />
 
         {/* Sign Out Button */}
-        <form action="/auth/signout" method="post" onSubmit={() => setIsOpen(false)}>
-          <button
-            type="submit"
-            className="flex items-center justify-center gap-3.5 p-4 rounded-2xl w-full text-mushroom hover:bg-cream hover:text-terracotta transition-all duration-300 border border-transparent hover:border-stone/50"
-          >
-            <LogOut size={20} strokeWidth={1.5} className="transition-colors duration-300" />
-            <span className="text-sm font-medium tracking-wide">Sign Out</span>
-          </button>
-        </form>
+        <button
+          onClick={async () => {
+            setIsOpen(false);
+            const { createClient } = await import('@/lib/supabase/client');
+            const supabase = createClient();
+            await supabase.auth.signOut();
+            window.location.href = '/signin';
+          }}
+          type="button"
+          className="flex items-center justify-center gap-3.5 p-4 rounded-2xl w-full text-mushroom hover:bg-cream hover:text-terracotta transition-all duration-300 border border-transparent hover:border-stone/50"
+        >
+          <LogOut size={20} strokeWidth={1.5} className="transition-colors duration-300" />
+          <span className="text-sm font-medium tracking-wide">Sign Out</span>
+        </button>
       </div>
     </>
   );

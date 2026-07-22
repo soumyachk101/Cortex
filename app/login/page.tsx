@@ -27,22 +27,33 @@ function LoginContent() {
     setLoading(true);
     setError('');
 
+    // Clear any previous session
+    await supabase.auth.signOut();
+
     if (isSignUp) {
-      const { error } = await supabase.auth.signUp({ email, password });
-      if (error) setError(error.message);
-      else {
-        const { data: { user } } = await supabase.auth.getUser();
-        if (user) {
-          await supabase.from('user_settings').insert({ user_id: user.id });
-        }
-        router.push('/onboarding');
+      const { data, error } = await supabase.auth.signUp({ email, password });
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      } else if (data.session && data.user) {
+        await supabase.from('user_settings').upsert(
+          { user_id: data.user.id },
+          { onConflict: 'user_id', ignoreDuplicates: true }
+        );
+        window.location.href = '/onboarding';
+      } else if (data.user) {
+        setError('Account created! Please check your email inbox to confirm your sign-up before logging in.');
+        setLoading(false);
       }
     } else {
       const { error } = await supabase.auth.signInWithPassword({ email, password });
-      if (error) setError(error.message);
-      else router.push('/dashboard');
+      if (error) {
+        setError(error.message);
+        setLoading(false);
+      } else {
+        window.location.href = '/dashboard';
+      }
     }
-    setLoading(false);
   }
 
   async function signInWithGoogle() {

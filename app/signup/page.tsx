@@ -21,15 +21,20 @@ export default function SignUpPage() {
     setLoading(true);
     setError('');
 
-    const { error } = await supabase.auth.signUp({ email, password });
+    // Clear any previous session
+    await supabase.auth.signOut();
+
+    const { data, error } = await supabase.auth.signUp({ email, password });
     if (error) {
       setError(error.message);
-    } else {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (user) {
-        await supabase.from('user_settings').insert({ user_id: user.id });
-      }
-      router.push('/onboarding');
+    } else if (data.session && data.user) {
+      await supabase.from('user_settings').upsert(
+        { user_id: data.user.id },
+        { onConflict: 'user_id', ignoreDuplicates: true }
+      );
+      window.location.href = '/onboarding';
+    } else if (data.user) {
+      setError('Account created! Please check your email inbox to confirm your sign-up before logging in.');
     }
     setLoading(false);
   }
