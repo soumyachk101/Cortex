@@ -4,7 +4,7 @@ import { useEffect, useState, useRef } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
-import { ALL_MODELS } from '@/constants';
+import { ALL_MODELS, GEMINI_MODELS, GROQ_MODELS } from '@/constants';
 import { Send, Trash2, Sparkles, Copy, Check, Wallet, CheckSquare, BarChart3, StickyNote } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -64,7 +64,10 @@ export default function AgentPage() {
         let m = raw;
         if (raw.startsWith('groq:')) {
           p = 'groq';
-          m = raw.replace('groq:', '');
+          const extracted = raw.replace('groq:', '');
+          m = GROQ_MODELS.some(x => x.id === extracted) ? extracted : 'llama-3.3-70b-versatile';
+        } else {
+          m = GEMINI_MODELS.some(x => x.id === raw) ? raw : 'gemini-2.0-flash';
         }
         setProvider(p);
         setModelId(m);
