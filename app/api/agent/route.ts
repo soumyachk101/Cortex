@@ -258,17 +258,33 @@ async function runGeminiChat(message: string, history: any[], userId: string, su
   return { text, history: updatedHistory };
 }
 
-// Gemini handler with automatic fallback
+// Gemini handler with automatic candidate fallback
 async function handleGemini(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string) {
-  try {
-    return await runGeminiChat(message, history, userId, supabase, apiKey, modelId);
-  } catch (err: any) {
-    console.warn(`Gemini model "${modelId}" error: ${err.message}. Retrying with "gemini-1.5-flash"...`);
-    if (modelId !== 'gemini-1.5-flash') {
-      return await runGeminiChat(message, history, userId, supabase, apiKey, 'gemini-1.5-flash');
+  const candidateModels = Array.from(new Set([
+    modelId,
+    modelId.includes('-latest') ? modelId : `${modelId}-latest`,
+    'gemini-1.5-flash-latest',
+    'gemini-1.5-flash-002',
+    'gemini-1.5-flash-001',
+    'gemini-2.0-flash-exp',
+    'gemini-1.5-pro-latest',
+  ]));
+
+  let lastError: any = null;
+  for (const candidate of candidateModels) {
+    try {
+      return await runGeminiChat(message, history, userId, supabase, apiKey, candidate);
+    } catch (err: any) {
+      lastError = err;
+      const isNotFound = err?.message?.includes('404') || err?.message?.includes('not found') || err?.message?.includes('not supported');
+      if (isNotFound) {
+        console.warn(`Gemini model "${candidate}" error (404/unsupported). Retrying with next candidate...`);
+        continue;
+      }
+      throw err;
     }
-    throw err;
   }
+  throw lastError;
 }
 
 // Groq handler
@@ -366,7 +382,7 @@ export async function POST(request: NextRequest) {
     if (aiProvider === 'groq') {
       result = await handleGroq(message, history || [], user.id, supabase, apiKey, modelId || 'llama-3.3-70b-versatile');
     } else {
-      result = await handleGemini(message, history || [], user.id, supabase, apiKey, modelId || 'gemini-1.5-flash');
+      result = await handleGemini(message, history || [], user.id, supabase, apiKey, modelId || 'gemini-1.5-flash-latest');
     }
 
     // Store in context (chat_messages)
