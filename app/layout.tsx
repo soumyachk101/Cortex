@@ -18,6 +18,9 @@ const sourceSans = Source_Sans_3({
 export const metadata: Metadata = {
   title: 'Cortex — Personal Finance & Productivity',
   description: 'A botanical-inspired personal finance and productivity app with AI assistance',
+  verification: {
+    google: 'ZpF1y5Vf8qpLfP1vopILxuM2d6ODw2JrbYzI7h_3fb0',
+  },
 };
 
 export default function RootLayout({
@@ -27,6 +30,9 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en" suppressHydrationWarning className={`${playfair.variable} ${sourceSans.variable}`}>
+      <head>
+        <meta name="google-site-verification" content="ZpF1y5Vf8qpLfP1vopILxuM2d6ODw2JrbYzI7h_3fb0" />
+      </head>
       <body className="font-sans antialiased bg-alabaster text-forest">
         <ThemeProvider>
           {/* Paper Grain Texture Overlay */}
