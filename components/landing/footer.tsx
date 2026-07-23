@@ -42,16 +42,16 @@ export function Footer() {
               <span className="font-serif text-xl sm:text-2xl font-semibold text-white">Cortex</span>
             </Link>
             <p className="text-white/40 text-xs sm:text-sm leading-relaxed max-w-xs mb-5 sm:mb-6">
-              AI-powered personal finance and productivity. Botanical calm meets computational power.
+              AI-powered personal finance & productivity assistant. Multimodal Receipt OCR, Voice AI, Live Camera Scan, and Smart Budget Insights.
             </p>
             <a
-              href="https://github.com/soumyachk101"
+              href="https://github.com/soumyachk101/Cortex"
               target="_blank"
               rel="noopener noreferrer"
               className="inline-flex items-center gap-2 text-sm text-white/30 hover:text-white/60 transition-colors duration-300"
             >
               <Github size={16} strokeWidth={1.5} />
-              soumyachk101
+              soumyachk101/Cortex
             </a>
           </div>
 
