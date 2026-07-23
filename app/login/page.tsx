@@ -5,6 +5,7 @@ import { useState, useEffect, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { Leaf, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { TurnstileCaptcha } from '@/components/auth/turnstile-captcha';
 
 function LoginContent() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ function LoginContent() {
   const [isSignUp, setIsSignUp] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const router = useRouter();
   const searchParams = useSearchParams();
   const supabase = createClient();
@@ -31,7 +33,13 @@ function LoginContent() {
     await supabase.auth.signOut();
 
     if (isSignUp) {
-      const { data, error } = await supabase.auth.signUp({ email, password });
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          captchaToken: captchaToken || undefined,
+        },
+      });
       if (error) {
         setError(error.message);
         setLoading(false);
@@ -46,7 +54,13 @@ function LoginContent() {
         setLoading(false);
       }
     } else {
-      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+        options: {
+          captchaToken: captchaToken || undefined,
+        },
+      });
       if (error) {
         setError(error.message);
         setLoading(false);
@@ -114,6 +128,8 @@ function LoginContent() {
                 </button>
               </div>
             </div>
+
+            <TurnstileCaptcha onVerify={setCaptchaToken} />
 
             {error && <div className="p-3 bg-terracotta/10 border border-terracotta/20 rounded-xl text-sm text-terracotta">{error}</div>}
 

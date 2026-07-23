@@ -6,6 +6,7 @@ import { createClient } from '@/lib/supabase/client';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { Leaf, ArrowRight, Eye, EyeOff } from 'lucide-react';
+import { TurnstileCaptcha } from '@/components/auth/turnstile-captcha';
 
 export default function SignUpPage() {
   const [email, setEmail] = useState('');
@@ -13,6 +14,7 @@ export default function SignUpPage() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [captchaToken, setCaptchaToken] = useState('');
   const router = useRouter();
   const supabase = createClient();
 
@@ -24,7 +26,13 @@ export default function SignUpPage() {
     // Clear any previous session
     await supabase.auth.signOut();
 
-    const { data, error } = await supabase.auth.signUp({ email, password });
+    const { data, error } = await supabase.auth.signUp({
+      email,
+      password,
+      options: {
+        captchaToken: captchaToken || undefined,
+      },
+    });
     if (error) {
       setError(error.message);
     } else if (data.session && data.user) {
@@ -95,6 +103,8 @@ export default function SignUpPage() {
                 </button>
               </div>
             </div>
+
+            <TurnstileCaptcha onVerify={setCaptchaToken} />
 
             {error && <div className="p-3 bg-terracotta/10 border border-terracotta/20 rounded-xl text-sm text-terracotta">{error}</div>}
 
