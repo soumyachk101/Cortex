@@ -195,20 +195,44 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* AI Insights */}
-        <div className="rounded-card p-6 bg-sage/5 border border-sage/20 mb-12">
-          <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center flex-shrink-0">
-              <Leaf size={20} strokeWidth={1.5} className="text-sage" />
+        {/* AI Insights & Budget Alert */}
+        <div className="rounded-card p-6 bg-cream/70 border border-stone/50 mb-12 relative overflow-hidden shadow-botanical">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+            <div className="flex items-start gap-4">
+              <div className="w-12 h-12 rounded-full bg-sage/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                <Leaf size={22} strokeWidth={1.5} className="text-sage animate-pulse" />
+              </div>
+              <div>
+                <p className="font-serif text-lg font-semibold text-forest flex items-center gap-2">
+                  <span>AI Financial Insights</span>
+                  <span className="text-[10px] bg-sage/15 text-sage px-2 py-0.5 rounded-full uppercase tracking-wider font-sans font-medium">Smart</span>
+                </p>
+                <p className="text-sm text-text-secondary mt-1 leading-relaxed">
+                  {chartData.length > 0 ? (
+                    <>
+                      Top category is <strong className="text-forest">{chartData.sort((a, b) => b.value - a.value)[0].name}</strong> ({((chartData[0].value / (totalSpent || 1)) * 100).toFixed(0)}% of total spent).
+                      {budget > 0 && totalSpent > budget && (
+                        <span className="block mt-1 text-terracotta font-medium">⚠️ Alert: You have exceeded your monthly budget of {currency}{budget}!</span>
+                      )}
+                      {budget > 0 && totalSpent <= budget && totalSpent / budget >= 0.8 && (
+                        <span className="block mt-1 text-amber-600 font-medium">⚠️ Warning: You have used {((totalSpent / budget) * 100).toFixed(0)}% of your monthly budget.</span>
+                      )}
+                    </>
+                  ) : (
+                    'No transactions recorded for this month yet. Ask Cortex AI or scan a receipt to get started!'
+                  )}
+                </p>
+              </div>
             </div>
-            <div>
-              <p className="font-serif text-lg font-semibold text-sage">AI Insights</p>
-              <p className="text-sm text-text-secondary mt-1 leading-relaxed">
-                {chartData.length > 0
-                  ? `Top spend: ${chartData.sort((a, b) => b.value - a.value)[0].name} (${currency}${chartData[0].value.toFixed(0)})`
-                  : 'No expenses this month. Add one to get started!'}
-              </p>
-            </div>
+            <button
+              onClick={() => {
+                const promptText = encodeURIComponent('Analyze my spending summary for this month and give me personalized budget advice.');
+                router.push(`/agent?prompt=${promptText}&new=true`);
+              }}
+              className="px-4 py-2 rounded-full bg-forest text-white text-xs font-medium hover:bg-forest/90 transition-all flex-shrink-0 whitespace-nowrap self-end sm:self-center"
+            >
+              Ask AI Agent
+            </button>
           </div>
         </div>
 

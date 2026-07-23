@@ -104,9 +104,15 @@ const tools: Tool[] = [{
   ],
 }];
 
-const systemPrompt = `You are Cortex, a personal finance and productivity assistant. You help users manage expenses, tasks, notes, and reminders through natural conversation.
+function getSystemPrompt(currencySymbol: string = '₹') {
+  return `You are Cortex, a personal finance and productivity assistant. You help users manage expenses, tasks, notes, and reminders through natural conversation.
 
 When users ask you to do something, use the appropriate tool. Be concise and helpful. Format responses with markdown when useful (bold, lists, etc).
+
+CRITICAL CURRENCY INSTRUCTION:
+- The user's primary currency symbol is strictly: ${currencySymbol}
+- ALWAYS format every monetary amount using the symbol ${currencySymbol} (e.g., ${currencySymbol}500, ${currencySymbol}28,100).
+- DO NOT use the dollar sign '$' or 'USD' under any circumstances.
 
 Guidelines:
 - For expenses: always ask for amount, title, and category if not provided
@@ -114,9 +120,14 @@ Guidelines:
 - For tasks: priority 0=low, 1=medium, 2=high
 - For summaries: provide clear breakdowns with percentages
 - Be warm but efficient. No filler.`;
+}
 
 // Tool execution function
 async function executeTool(name: string, args: any, userId: string, supabase: any) {
+  // Fetch user currency setting
+  const { data: userSettings } = await supabase.from('user_settings').select('currency_symbol').eq('user_id', userId).maybeSingle();
+  const currencySymbol = userSettings?.currency_symbol || '₹';
+
   switch (name) {
     case 'addExpense': {
       const { error } = await supabase.from('expenses').insert({
@@ -124,7 +135,7 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
         category: args.category, date: new Date().toISOString(), note: args.note || '',
       });
       if (error) throw new Error(error.message);
-      return { success: true, message: `Added ${args.amount} to ${args.category} for ${args.title}` };
+      return { success: true, currency: currencySymbol, message: `Added ${currencySymbol}${args.amount} to ${args.category} for ${args.title}` };
     }
     case 'getExpenses': {
       let query = supabase.from('expenses').select('*').eq('user_id', userId).order('date', { ascending: false });
@@ -133,7 +144,7 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
       else query = query.limit(10);
       const { data, error } = await query;
       if (error) throw new Error(error.message);
-      return { expenses: data };
+      return { currency: currencySymbol, expenses: data };
     }
     case 'addTask': {
       const { error } = await supabase.from('tasks').insert({
@@ -187,16 +198,16 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
       const byCat: Record<string, number> = {};
       let total = 0;
       (data || []).forEach((e: any) => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; total += e.amount; });
-      return { period: args.period, total, count: data?.length || 0, byCategory: byCat };
+      return { period: args.period, currency: currencySymbol, total, count: data?.length || 0, byCategory: byCat };
     }
     default:
       return { error: `Unknown tool: ${name}` };
   }
 }
 
-async function runGeminiChat(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string) {
+async function runGeminiChat(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string, image?: { data: string; mimeType: string }, currencySymbol: string = '₹') {
   const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: modelId, tools, systemInstruction: systemPrompt });
+  const model = genAI.getGenerativeModel({ model: modelId, tools, systemInstruction: getSystemPrompt(currencySymbol) });
 
   // Sanitize history for Gemini SDK
   const sanitizedHistory: any[] = [];
@@ -222,7 +233,21 @@ async function runGeminiChat(message: string, history: any[], userId: string, su
   }
 
   const chat = model.startChat({ history: sanitizedHistory });
-  const result = await chat.sendMessage(message);
+
+  let sendPayload: any = message;
+  if (image && image.data) {
+    sendPayload = [
+      {
+        inlineData: {
+          data: image.data,
+          mimeType: image.mimeType || 'image/jpeg',
+        },
+      },
+      message || 'Analyze this receipt/bill image. Extract the title, total amount spent, and category, then call the addExpense tool to record it automatically.',
+    ];
+  }
+
+  const result = await chat.sendMessage(sendPayload);
   let response = result.response;
 
   // Tool call loop
@@ -259,7 +284,7 @@ async function runGeminiChat(message: string, history: any[], userId: string, su
 }
 
 // Gemini handler with automatic candidate fallback
-async function handleGemini(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string) {
+async function handleGemini(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string, image?: { data: string; mimeType: string }, currencySymbol: string = '₹') {
   const candidateModels = Array.from(new Set([
     modelId,
     modelId.includes('-latest') ? modelId : `${modelId}-latest`,
@@ -276,7 +301,7 @@ async function handleGemini(message: string, history: any[], userId: string, sup
   let lastError: any = null;
   for (const candidate of candidateModels) {
     try {
-      return await runGeminiChat(message, history, userId, supabase, apiKey, candidate);
+      return await runGeminiChat(message, history, userId, supabase, apiKey, candidate, image, currencySymbol);
     } catch (err: any) {
       lastError = err;
       const isNotFound = err?.message?.includes('404') || err?.message?.includes('not found') || err?.message?.includes('not supported');
@@ -290,13 +315,44 @@ async function handleGemini(message: string, history: any[], userId: string, sup
   throw lastError;
 }
 
+function mapSchemaType(type: any): string {
+  if (typeof type === 'string') return type.toLowerCase();
+  switch (type) {
+    case SchemaType.STRING: return 'string';
+    case SchemaType.NUMBER: return 'number';
+    case SchemaType.INTEGER: return 'integer';
+    case SchemaType.BOOLEAN: return 'boolean';
+    case SchemaType.ARRAY: return 'array';
+    case SchemaType.OBJECT: return 'object';
+    default: return 'string';
+  }
+}
+
+function cleanParametersForGroq(params: any): any {
+  if (!params) return { type: 'object', properties: {} };
+  const cleanedProps: any = {};
+  if (params.properties) {
+    for (const [key, val] of Object.entries(params.properties as any)) {
+      cleanedProps[key] = {
+        type: mapSchemaType((val as any).type),
+        description: (val as any).description || '',
+      };
+    }
+  }
+  return {
+    type: 'object',
+    properties: cleanedProps,
+    required: params.required || [],
+  };
+}
+
 // Groq handler
-async function handleGroq(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string) {
+async function handleGroq(message: string, history: any[], userId: string, supabase: any, apiKey: string, modelId: string, currencySymbol: string = '₹') {
   const groq = new Groq({ apiKey });
 
   // Convert history to Groq format
   const messages: any[] = [
-    { role: 'system', content: systemPrompt },
+    { role: 'system', content: getSystemPrompt(currencySymbol) },
   ];
 
   // Add conversation history
@@ -310,14 +366,14 @@ async function handleGroq(message: string, history: any[], userId: string, supab
 
   messages.push({ role: 'user', content: message });
 
-  // Convert tools to Groq format
+  // Convert tools to standard JSON Schema format for Groq
   const toolDecls = (tools[0] as any).functionDeclarations || [];
   const groqTools = toolDecls.map((fd: any) => ({
     type: 'function' as const,
     function: {
       name: fd.name,
       description: fd.description,
-      parameters: fd.parameters,
+      parameters: cleanParametersForGroq(fd.parameters),
     },
   }));
 
@@ -325,23 +381,35 @@ async function handleGroq(message: string, history: any[], userId: string, supab
   let finalText = '';
 
   while (safety < 10) {
-    const completion = await groq.chat.completions.create({
-      model: modelId,
-      messages,
-      tools: groqTools,
-      tool_choice: 'auto',
-      max_tokens: 2048,
-    });
+    let completion: any;
+    try {
+      completion = await groq.chat.completions.create({
+        model: modelId,
+        messages,
+        tools: groqTools,
+        tool_choice: 'auto',
+        max_tokens: 2048,
+      });
+    } catch (err: any) {
+      // If Groq tool calling fails with 400, retry once without explicit tools tool_choice or fallback
+      if (err?.status === 400 || err?.message?.includes('tool')) {
+        completion = await groq.chat.completions.create({
+          model: modelId,
+          messages,
+          max_tokens: 2048,
+        });
+      } else {
+        throw err;
+      }
+    }
 
     const choice = completion.choices[0];
     if (!choice.message) break;
 
-    // Check for tool calls
+    // Check for standard OpenAI tool calls
     if (choice.message.tool_calls && choice.message.tool_calls.length > 0) {
-      // Add assistant message with tool calls
       messages.push(choice.message);
 
-      // Execute each tool call
       for (const tc of choice.message.tool_calls) {
         const args = typeof tc.function.arguments === 'string'
           ? JSON.parse(tc.function.arguments)
@@ -355,8 +423,25 @@ async function handleGroq(message: string, history: any[], userId: string, supab
         });
       }
     } else {
-      finalText = choice.message.content || 'I processed your request.';
-      break;
+      const content = choice.message.content || '';
+      // Check for pseudo-xml tool calls like <function=getExpenseSummary,{"period": "month"}></function>
+      const xmlMatch = content.match(/<function=([a-zA-Z0-9_]+),?([\s\S]*?)><\/function>/) ||
+                       content.match(/<function=([a-zA-Z0-9_]+)>([\s\S]*?)<\/function>/);
+
+      if (xmlMatch) {
+        const toolName = xmlMatch[1];
+        let toolArgs = {};
+        try {
+          if (xmlMatch[2]) toolArgs = JSON.parse(xmlMatch[2].trim());
+        } catch {}
+
+        const toolResult = await executeTool(toolName, toolArgs, userId, supabase);
+        messages.push({ role: 'assistant', content: content });
+        messages.push({ role: 'user', content: `Tool ${toolName} output: ${JSON.stringify(toolResult)}` });
+      } else {
+        finalText = content || 'I processed your request.';
+        break;
+      }
     }
     safety++;
   }
@@ -375,17 +460,21 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { message, history, modelId, apiKey, provider, sessionId: clientSessionId } = await request.json();
-  if (!message || !apiKey) return NextResponse.json({ error: 'Missing message or API key' }, { status: 400 });
+  const { message, history, modelId, apiKey, provider, sessionId: clientSessionId, image } = await request.json();
+  if ((!message && !image) || !apiKey) return NextResponse.json({ error: 'Missing message/image or API key' }, { status: 400 });
+
+  // Fetch user currency setting
+  const { data: userSettings } = await supabase.from('user_settings').select('currency_symbol').eq('user_id', user.id).maybeSingle();
+  const currencySymbol = userSettings?.currency_symbol || '₹';
 
   try {
     const aiProvider = provider || 'gemini';
     let result;
 
     if (aiProvider === 'groq') {
-      result = await handleGroq(message, history || [], user.id, supabase, apiKey, modelId || 'llama-3.3-70b-versatile');
+      result = await handleGroq(message || 'Analyze request', history || [], user.id, supabase, apiKey, modelId || 'llama-3.3-70b-versatile', currencySymbol);
     } else {
-      result = await handleGemini(message, history || [], user.id, supabase, apiKey, modelId || 'gemini-2.5-flash');
+      result = await handleGemini(message || 'Analyze receipt image', history || [], user.id, supabase, apiKey, modelId || 'gemini-2.5-flash', image, currencySymbol);
     }
 
     let activeSessionId = clientSessionId;

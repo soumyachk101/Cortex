@@ -1,13 +1,14 @@
 'use client';
 export const dynamic = 'force-dynamic';
-import { useEffect, useState, useRef } from 'react';
+import { useEffect, useState, useRef, Suspense } from 'react';
 import { createClient } from '@/lib/supabase/client';
-import { useRouter } from 'next/navigation';
+import { useRouter, useSearchParams } from 'next/navigation';
 import { AppShell } from '@/components/layout/app-shell';
 import { ALL_MODELS, GEMINI_MODELS, GROQ_MODELS } from '@/constants';
 import {
   Send, Trash2, Sparkles, Copy, Check, Wallet, CheckSquare,
-  BarChart3, StickyNote, Plus, MessageSquare, History, X, PanelLeft
+  BarChart3, StickyNote, Plus, MessageSquare, History, X, PanelLeft,
+  Camera, Mic, MicOff, Image as ImageIcon
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -17,6 +18,7 @@ interface Message {
   text: string;
   isUser: boolean;
   toolUsed?: string;
+  imageUrl?: string;
   timestamp: Date;
 }
 
@@ -27,7 +29,14 @@ interface ChatSession {
   updated_at: string;
 }
 
+interface ImagePayload {
+  data: string; // base64
+  mimeType: string;
+  previewUrl: string;
+}
+
 const QUICK_ACTIONS = [
+  { label: 'Scan Receipt', icon: Camera, prompt: '', isScan: true, color: '#10B981' },
   { label: 'Add Expense', icon: Wallet, prompt: 'Add an expense: ', color: '#EF4444' },
   { label: 'Add Task', icon: CheckSquare, prompt: 'Create a task: ', color: '#3B82F6' },
   { label: 'Summary', icon: BarChart3, prompt: 'Show my spending summary for this month', color: '#8B5CF6' },
@@ -71,7 +80,7 @@ function groupSessionsByDate(sessions: ChatSession[]) {
   return Object.entries(groups).filter(([_, items]) => items.length > 0);
 }
 
-export default function AgentPage() {
+function AgentContent() {
   const [userId, setUserId] = useState<string>();
   const [apiKey, setApiKey] = useState('');
   const [modelId, setModelId] = useState('gemini-2.5-flash');
@@ -87,10 +96,21 @@ export default function AgentPage() {
   const [history, setHistory] = useState<any[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
+  // Vision OCR & Voice states
+  const [selectedImage, setSelectedImage] = useState<ImagePayload | null>(null);
+  const [isListening, setIsListening] = useState(false);
+
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+  const recognitionRef = useRef<any>(null);
+
   const router = useRouter();
+  const searchParams = useSearchParams();
   const supabase = createClient();
+
+  const autoPrompt = searchParams.get('prompt');
+  const autoNew = searchParams.get('new');
 
   // Load user settings & sessions
   useEffect(() => {
@@ -98,12 +118,14 @@ export default function AgentPage() {
       if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
 
-      // Default sidebar closed on small screens (< 1024px)
       if (typeof window !== 'undefined' && window.innerWidth < 1024) {
         setShowHistory(false);
       }
 
-      // Load settings
+      let p = 'gemini';
+      let m = 'gemini-2.5-flash';
+      let key = '';
+
       const { data } = await supabase
         .from('user_settings')
         .select('gemini_api_key, selected_model')
@@ -112,8 +134,6 @@ export default function AgentPage() {
 
       if (data) {
         const raw = data.selected_model || 'gemini-2.5-flash';
-        let p = 'gemini';
-        let m = raw;
         if (raw.startsWith('groq:')) {
           p = 'groq';
           const extracted = raw.replace('groq:', '');
@@ -125,7 +145,6 @@ export default function AgentPage() {
         setModelId(m);
 
         const rawKey = data.gemini_api_key || '';
-        let key = '';
         try {
           const parsed = JSON.parse(rawKey);
           if (typeof parsed === 'object' && parsed !== null) {
@@ -139,7 +158,19 @@ export default function AgentPage() {
         setApiKey(key.trim());
       }
 
-      fetchSessions(user.id, true);
+      // Check if URL specifies starting a new chat or auto prompt
+      if (autoNew === 'true') {
+        setActiveSessionId(null);
+        setMessages([]);
+        setHistory([]);
+      } else {
+        fetchSessions(user.id, true);
+      }
+
+      // If autoPrompt is passed in query string, trigger send automatically
+      if (autoPrompt && key.trim()) {
+        sendAutoPrompt(autoPrompt, key.trim(), p, m, user.id);
+      }
     });
   }, []);
 
@@ -206,6 +237,7 @@ export default function AgentPage() {
     setActiveSessionId(null);
     setMessages([]);
     setHistory([]);
+    setSelectedImage(null);
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setShowHistory(false);
     }
@@ -229,9 +261,124 @@ export default function AgentPage() {
     }
   }
 
+  // Auto send prompt from query parameter
+  async function sendAutoPrompt(promptText: string, key: string, p: string, m: string, uid: string) {
+    const userMessage: Message = {
+      id: Date.now().toString(),
+      text: promptText,
+      isUser: true,
+      timestamp: new Date(),
+    };
+
+    setMessages([userMessage]);
+    setIsTyping(true);
+
+    try {
+      const res = await fetch('/api/agent', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          message: promptText,
+          history: [],
+          modelId: m,
+          apiKey: key,
+          provider: p,
+          sessionId: null,
+        }),
+      });
+
+      const data = await res.json();
+      if (data.error) {
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: `Error: ${data.error}`,
+          isUser: false,
+          timestamp: new Date(),
+        }]);
+      } else {
+        const lastToolCall = data.history?.findLast?.((h: any) => h.parts?.some((prt: any) => prt.functionCall));
+        const toolName = lastToolCall?.parts?.find((prt: any) => prt.functionCall)?.functionCall?.name;
+        setMessages(prev => [...prev, {
+          id: Date.now().toString(),
+          text: data.text,
+          isUser: false,
+          toolUsed: toolName,
+          timestamp: new Date(),
+        }]);
+        setHistory(data.history || []);
+
+        if (data.sessionId) {
+          setActiveSessionId(data.sessionId);
+          fetchSessions(uid);
+        }
+      }
+    } catch (e: any) {
+      setMessages(prev => [...prev, {
+        id: Date.now().toString(),
+        text: `Error: ${e.message}`,
+        isUser: false,
+        timestamp: new Date(),
+      }]);
+    } finally {
+      setIsTyping(false);
+    }
+  }
+
+  // Handle Image File Selection for Receipt OCR
+  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const mimeType = file.type || 'image/jpeg';
+    const reader = new FileReader();
+
+    reader.onloadend = () => {
+      const result = reader.result as string;
+      const base64Data = result.split(',')[1];
+      setSelectedImage({
+        data: base64Data,
+        mimeType,
+        previewUrl: result,
+      });
+    };
+    reader.readAsDataURL(file);
+  }
+
+  // Handle Voice Input (Speech to Text)
+  function toggleVoiceInput() {
+    if (isListening) {
+      if (recognitionRef.current) recognitionRef.current.stop();
+      setIsListening(false);
+      return;
+    }
+
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      alert('Voice recognition is not supported in your browser.');
+      return;
+    }
+
+    const recognition = new SpeechRecognition();
+    recognition.continuous = false;
+    recognition.interimResults = false;
+    recognition.lang = 'en-US';
+
+    recognition.onstart = () => setIsListening(true);
+    recognition.onresult = (event: any) => {
+      const transcript = event.results[0][0].transcript;
+      setInput(prev => (prev ? `${prev} ${transcript}` : transcript));
+      setIsListening(false);
+    };
+    recognition.onerror = () => setIsListening(false);
+    recognition.onend = () => setIsListening(false);
+
+    recognitionRef.current = recognition;
+    recognition.start();
+  }
+
   async function send(text?: string) {
     const msg = text || input;
-    if (!msg.trim() || isTyping) return;
+    if ((!msg.trim() && !selectedImage) || isTyping) return;
 
     if (!apiKey) {
       setMessages(prev => [...prev, {
@@ -243,15 +390,23 @@ export default function AgentPage() {
       return;
     }
 
+    const userMessageText = selectedImage
+      ? (msg ? `[Receipt Uploaded] ${msg}` : '📷 Scanning uploaded receipt image...')
+      : msg;
+
     const userMessage: Message = {
       id: Date.now().toString(),
-      text: msg,
+      text: userMessageText,
       isUser: true,
+      imageUrl: selectedImage?.previewUrl,
       timestamp: new Date(),
     };
 
+    const imgPayload = selectedImage ? { data: selectedImage.data, mimeType: selectedImage.mimeType } : undefined;
+
     setMessages(prev => [...prev, userMessage]);
     setInput('');
+    setSelectedImage(null);
     setIsTyping(true);
 
     try {
@@ -265,6 +420,7 @@ export default function AgentPage() {
           apiKey,
           provider,
           sessionId: activeSessionId,
+          image: imgPayload,
         }),
       });
 
@@ -312,9 +468,13 @@ export default function AgentPage() {
     setTimeout(() => setCopiedId(null), 2000);
   }
 
-  function handleQuickAction(prompt: string) {
-    setInput(prompt);
-    inputRef.current?.focus();
+  function handleQuickAction(action: typeof QUICK_ACTIONS[0]) {
+    if (action.isScan) {
+      fileInputRef.current?.click();
+    } else {
+      setInput(action.prompt);
+      inputRef.current?.focus();
+    }
   }
 
   const modelName = ALL_MODELS.find(m => m.id === modelId)?.name || modelId;
@@ -323,6 +483,15 @@ export default function AgentPage() {
   return (
     <AppShell>
       <div className="flex h-[calc(100svh-5rem)] md:h-screen overflow-hidden bg-alabaster relative">
+
+        {/* Hidden File Input for Receipt Scanner */}
+        <input
+          type="file"
+          ref={fileInputRef}
+          accept="image/*"
+          className="hidden"
+          onChange={handleImageSelect}
+        />
 
         {/* Backdrop for mobile drawer */}
         {showHistory && (
@@ -428,6 +597,14 @@ export default function AgentPage() {
 
             <div className="flex items-center gap-2">
               <button
+                onClick={() => fileInputRef.current?.click()}
+                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-sage/10 text-sage hover:bg-sage/20 transition-colors"
+                title="Upload receipt for AI OCR"
+              >
+                <Camera size={14} />
+                <span>Scan Receipt</span>
+              </button>
+              <button
                 onClick={startNewChat}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-cream border border-stone/50 text-forest hover:bg-sage/10 transition-colors"
               >
@@ -457,7 +634,7 @@ export default function AgentPage() {
                 </div>
                 <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-semibold text-forest mb-2 sm:mb-3">Ask me anything</h2>
                 <p className="text-text-secondary max-w-sm sm:max-w-md leading-relaxed mb-6 sm:mb-10 text-sm sm:text-base px-2">
-                  Manage expenses, tasks, notes, and more. Just ask in plain English.
+                  Manage expenses, tasks, notes, or scan receipts with AI. Just ask in plain English or Hindi.
                 </p>
 
                 {/* Quick Actions */}
@@ -465,7 +642,7 @@ export default function AgentPage() {
                   {QUICK_ACTIONS.map((action) => (
                     <button
                       key={action.label}
-                      onClick={() => handleQuickAction(action.prompt)}
+                      onClick={() => handleQuickAction(action)}
                       className="flex items-center gap-1.5 px-3 sm:px-4 py-2.5 sm:py-3 rounded-full text-xs sm:text-sm bg-white border border-stone/50 text-text-secondary active:bg-cream active:border-sage transition-all duration-200"
                     >
                       <action.icon size={14} strokeWidth={1.5} style={{ color: action.color }} />
@@ -508,6 +685,11 @@ export default function AgentPage() {
                     )}
 
                     <div className={`px-3.5 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl ${m.isUser ? 'bg-forest text-white rounded-br-md' : 'bg-white border border-stone/50 text-forest rounded-bl-md'}`}>
+                      {m.imageUrl && (
+                        <div className="mb-2 rounded-lg overflow-hidden border border-white/20 max-w-[200px]">
+                          <img src={m.imageUrl} alt="Uploaded receipt" className="w-full h-auto object-cover" />
+                        </div>
+                      )}
                       {m.isUser ? (
                         <p className="whitespace-pre-wrap text-[13px] sm:text-sm leading-relaxed break-words">{m.text}</p>
                       ) : (
@@ -541,6 +723,22 @@ export default function AgentPage() {
             )}
           </div>
 
+          {/* Image Preview Bar if image is selected */}
+          {selectedImage && (
+            <div className="flex-none px-3 sm:px-6 py-2 bg-cream/80 border-t border-stone/30 flex items-center justify-between">
+              <div className="flex items-center gap-2.5 min-w-0">
+                <img src={selectedImage.previewUrl} alt="Receipt preview" className="w-10 h-10 rounded-lg object-cover border border-stone/50" />
+                <div className="min-w-0">
+                  <p className="text-xs font-medium text-forest truncate">Receipt attached</p>
+                  <p className="text-[10px] text-mushroom">Ready for Gemini AI OCR scan</p>
+                </div>
+              </div>
+              <button onClick={() => setSelectedImage(null)} className="p-1 rounded-full text-mushroom hover:text-terracotta">
+                <X size={16} />
+              </button>
+            </div>
+          )}
+
           {/* Quick Action Bar when in active chat */}
           {messages.length > 0 && (
             <div className="flex-none px-3 sm:px-6 pb-1">
@@ -548,7 +746,7 @@ export default function AgentPage() {
                 {QUICK_ACTIONS.map((action) => (
                   <button
                     key={action.label}
-                    onClick={() => handleQuickAction(action.prompt)}
+                    onClick={() => handleQuickAction(action)}
                     className="flex items-center gap-1.5 px-3 py-2 rounded-full text-[11px] sm:text-xs bg-cream border border-stone/30 text-text-secondary active:bg-white active:border-sage/50 whitespace-nowrap flex-shrink-0"
                   >
                     <action.icon size={12} strokeWidth={1.5} style={{ color: action.color }} />
@@ -562,20 +760,43 @@ export default function AgentPage() {
           {/* Input Box */}
           <div className="flex-none px-3 sm:px-6 py-3 sm:py-4 border-t border-stone/50 bg-white safe-area-bottom">
             <div className="flex gap-2 sm:gap-3 items-end">
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-sage hover:border-sage transition-colors flex-shrink-0"
+                title="Scan Receipt / Upload Image"
+              >
+                <Camera size={18} strokeWidth={1.5} />
+              </button>
+
+              <button
+                type="button"
+                onClick={toggleVoiceInput}
+                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full border flex items-center justify-center transition-all flex-shrink-0 ${
+                  isListening
+                    ? 'bg-terracotta text-white border-terracotta animate-pulse'
+                    : 'bg-cream border-stone/50 text-text-secondary hover:text-forest'
+                }`}
+                title={isListening ? 'Listening...' : 'Voice Input'}
+              >
+                {isListening ? <MicOff size={18} /> : <Mic size={18} strokeWidth={1.5} />}
+              </button>
+
               <input
                 ref={inputRef}
                 type="text"
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
-                placeholder="Ask Cortex..."
+                placeholder={isListening ? 'Listening to your voice...' : 'Ask Cortex or scan receipt...'}
                 className="flex-1 min-w-0 px-4 sm:px-5 py-3 sm:py-3.5 bg-cream border border-stone/50 rounded-full text-sm text-forest placeholder:text-mushroom focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30 transition-all duration-300"
                 disabled={!apiKey}
                 autoComplete="off"
               />
+
               <button
                 onClick={() => send()}
-                disabled={!apiKey || isTyping || !input.trim()}
+                disabled={!apiKey || isTyping || (!input.trim() && !selectedImage)}
                 className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-forest text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 active:scale-95 transition-all duration-200"
               >
                 <Send size={17} strokeWidth={1.5} />
@@ -586,5 +807,17 @@ export default function AgentPage() {
         </div>
       </div>
     </AppShell>
+  );
+}
+
+export default function AgentPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center bg-alabaster">
+        <div className="w-8 h-8 border-2 border-sage/30 border-t-sage rounded-full animate-spin" />
+      </div>
+    }>
+      <AgentContent />
+    </Suspense>
   );
 }
