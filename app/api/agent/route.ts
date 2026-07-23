@@ -375,7 +375,7 @@ export async function POST(request: NextRequest) {
   const { data: { user } } = await supabase.auth.getUser();
   if (!user) return NextResponse.json({ error: 'Unauthorized' }, { status: 401 });
 
-  const { message, history, modelId, apiKey, provider } = await request.json();
+  const { message, history, modelId, apiKey, provider, sessionId: clientSessionId } = await request.json();
   if (!message || !apiKey) return NextResponse.json({ error: 'Missing message or API key' }, { status: 400 });
 
   try {
@@ -388,42 +388,52 @@ export async function POST(request: NextRequest) {
       result = await handleGemini(message, history || [], user.id, supabase, apiKey, modelId || 'gemini-2.5-flash');
     }
 
+    let activeSessionId = clientSessionId;
+
     // Store in context (chat_messages)
     try {
-      // Find or create active session
-      let sessionId: string;
-      const { data: sessions } = await supabase.from('chat_sessions')
-        .select('id').eq('user_id', user.id).order('updated_at', { ascending: false }).limit(1);
+      if (activeSessionId) {
+        const { data: existing } = await supabase
+          .from('chat_sessions')
+          .select('id')
+          .eq('id', activeSessionId)
+          .eq('user_id', user.id)
+          .maybeSingle();
 
-      if (sessions && sessions.length > 0) {
-        sessionId = sessions[0].id;
-      } else {
-        const { data: newSession } = await supabase.from('chat_sessions')
-          .insert({ user_id: user.id, title: message.substring(0, 50) })
-          .select('id').single();
-        sessionId = newSession!.id;
+        if (!existing) {
+          activeSessionId = null;
+        }
+      }
+
+      if (!activeSessionId) {
+        const titleText = message.length > 45 ? `${message.substring(0, 45)}...` : message;
+        const { data: newSession } = await supabase
+          .from('chat_sessions')
+          .insert({ user_id: user.id, title: titleText })
+          .select('id')
+          .single();
+        activeSessionId = newSession!.id;
       }
 
       // Store user message
       await supabase.from('chat_messages').insert({
-        session_id: sessionId, user_id: user.id, role: 'user', content: message,
+        session_id: activeSessionId, user_id: user.id, role: 'user', content: message,
       });
 
       // Store assistant response
       await supabase.from('chat_messages').insert({
-        session_id: sessionId, user_id: user.id, role: 'assistant', content: result.text,
+        session_id: activeSessionId, user_id: user.id, role: 'assistant', content: result.text,
       });
 
-      // Update session timestamp and title if first message
+      // Update session timestamp
       await supabase.from('chat_sessions')
         .update({ updated_at: new Date().toISOString() })
-        .eq('id', sessionId);
+        .eq('id', activeSessionId);
     } catch (e) {
-      // Context store is non-blocking; continue even if it fails
       console.warn('Context store error:', e);
     }
 
-    return NextResponse.json(result);
+    return NextResponse.json({ ...result, sessionId: activeSessionId });
   } catch (e: any) {
     return NextResponse.json({ error: e.message }, { status: 500 });
   }
