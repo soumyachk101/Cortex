@@ -79,7 +79,7 @@ export default function AgentPage() {
 
   const [sessions, setSessions] = useState<ChatSession[]>([]);
   const [activeSessionId, setActiveSessionId] = useState<string | null>(null);
-  const [showHistory, setShowHistory] = useState(false);
+  const [showHistory, setShowHistory] = useState(true);
 
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState('');
@@ -97,6 +97,11 @@ export default function AgentPage() {
     supabase.auth.getUser().then(async ({ data: { user } }) => {
       if (!user) { router.push('/signin'); return; }
       setUserId(user.id);
+
+      // Default sidebar closed on small screens (< 1024px)
+      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+        setShowHistory(false);
+      }
 
       // Load settings
       const { data } = await supabase
@@ -165,7 +170,9 @@ export default function AgentPage() {
 
   async function selectSession(sessionId: string) {
     setActiveSessionId(sessionId);
-    setShowHistory(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setShowHistory(false);
+    }
     try {
       const { data: storedMsgs } = await supabase
         .from('chat_messages')
@@ -199,7 +206,9 @@ export default function AgentPage() {
     setActiveSessionId(null);
     setMessages([]);
     setHistory([]);
-    setShowHistory(false);
+    if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      setShowHistory(false);
+    }
     setTimeout(() => inputRef.current?.focus(), 100);
   }
 
@@ -325,10 +334,10 @@ export default function AgentPage() {
 
         {/* History Sidebar (Gemini/ChatGPT Style) */}
         <aside className={`
-          fixed lg:static inset-y-0 left-0 z-40
+          fixed lg:relative inset-y-0 left-0 z-40
           w-72 sm:w-80 bg-white border-r border-stone/50
-          flex flex-col transition-transform duration-300 ease-in-out
-          ${showHistory ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+          flex flex-col transition-all duration-300 ease-in-out flex-shrink-0
+          ${showHistory ? 'translate-x-0 lg:ml-0' : '-translate-x-full lg:-ml-72 sm:lg:-ml-80'}
         `}>
           {/* Sidebar Header: New Chat Button */}
           <div className="p-4 border-b border-stone/30 flex items-center justify-between gap-2">
@@ -401,7 +410,9 @@ export default function AgentPage() {
             <div className="flex items-center gap-3 min-w-0">
               <button
                 onClick={() => setShowHistory(!showHistory)}
-                className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-forest transition-colors"
+                className={`w-9 h-9 sm:w-10 sm:h-10 rounded-full border flex items-center justify-center transition-all ${
+                  showHistory ? 'bg-forest text-white border-forest shadow-sm' : 'bg-cream border-stone/50 text-text-secondary hover:text-forest'
+                }`}
                 title="Toggle Chat History"
               >
                 <PanelLeft size={18} />
