@@ -192,13 +192,40 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
         case 'year': startDate = new Date(now.getFullYear(), 0, 1); break;
         default: startDate = new Date(now.getFullYear(), now.getMonth(), 1);
       }
-      const { data, error } = await supabase.from('expenses').select('amount, category').eq('user_id', userId)
+      const { data, error } = await supabase.from('expenses').select('title, amount, category, date').eq('user_id', userId)
         .gte('date', startDate.toISOString());
       if (error) throw new Error(error.message);
+
       const byCat: Record<string, number> = {};
       let total = 0;
       (data || []).forEach((e: any) => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; total += e.amount; });
-      return { period: args.period, currency: currencySymbol, total, count: data?.length || 0, byCategory: byCat };
+
+      const budgetLimit = userSettings?.budget_limit || 0;
+      const percentages: Record<string, string> = {};
+      if (total > 0) {
+        for (const [cat, amt] of Object.entries(byCat)) {
+          percentages[cat] = `${((amt / total) * 100).toFixed(1)}% (${currencySymbol}${amt.toFixed(0)})`;
+        }
+      }
+
+      let budgetStatus = 'No budget set';
+      if (budgetLimit > 0) {
+        if (total > budgetLimit) budgetStatus = `EXCEEDED by ${currencySymbol}${(total - budgetLimit).toFixed(0)}`;
+        else if (total / budgetLimit >= 0.8) budgetStatus = `NEAR LIMIT (${((total / budgetLimit) * 100).toFixed(0)}% used)`;
+        else budgetStatus = `ON TRACK (${((total / budgetLimit) * 100).toFixed(0)}% used)`;
+      }
+
+      return {
+        period: args.period || 'month',
+        currency: currencySymbol,
+        total,
+        count: data?.length || 0,
+        budgetLimit,
+        budgetStatus,
+        byCategory: byCat,
+        categoryBreakdown: percentages,
+        sampleTransactions: (data || []).slice(0, 5).map((e: any) => `${e.title}: ${currencySymbol}${e.amount} (${e.category})`),
+      };
     }
     default:
       return { error: `Unknown tool: ${name}` };

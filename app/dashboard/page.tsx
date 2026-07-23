@@ -46,6 +46,8 @@ export default function DashboardPage() {
   const isCurrentMonth = selectedMonth.getMonth() === now.getMonth() && selectedMonth.getFullYear() === now.getFullYear();
 
   const chartData = Object.entries(byCategory).map(([name, value]) => ({ name, value }));
+  const sortedChartData = [...chartData].sort((a, b) => b.value - a.value);
+  const topCategory = sortedChartData[0];
   const activeCount = activeTasks.filter(t => !t.is_completed).length;
 
   const stats = [
@@ -208,9 +210,9 @@ export default function DashboardPage() {
                   <span className="text-[10px] bg-sage/15 text-sage px-2 py-0.5 rounded-full uppercase tracking-wider font-sans font-medium">Smart</span>
                 </p>
                 <p className="text-sm text-text-secondary mt-1 leading-relaxed">
-                  {chartData.length > 0 ? (
+                  {sortedChartData.length > 0 && topCategory ? (
                     <>
-                      Top category is <strong className="text-forest">{chartData.sort((a, b) => b.value - a.value)[0].name}</strong> ({((chartData[0].value / (totalSpent || 1)) * 100).toFixed(0)}% of total spent).
+                      Top category is <strong className="text-forest">{topCategory.name}</strong> ({((topCategory.value / (totalSpent || 1)) * 100).toFixed(0)}% of total spent: {currency}{topCategory.value.toFixed(0)}).
                       {budget > 0 && totalSpent > budget && (
                         <span className="block mt-1 text-terracotta font-medium">⚠️ Alert: You have exceeded your monthly budget of {currency}{budget}!</span>
                       )}
