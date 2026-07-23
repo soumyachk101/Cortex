@@ -8,7 +8,7 @@ import { ALL_MODELS, GEMINI_MODELS, GROQ_MODELS } from '@/constants';
 import {
   Send, Trash2, Sparkles, Copy, Check, Wallet, CheckSquare,
   BarChart3, StickyNote, Plus, MessageSquare, History, X, PanelLeft,
-  Camera, Mic, MicOff, Image as ImageIcon
+  Camera, Mic, MicOff, Paperclip, FileText, RefreshCw
 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
@@ -19,6 +19,7 @@ interface Message {
   isUser: boolean;
   toolUsed?: string;
   imageUrl?: string;
+  fileName?: string;
   timestamp: Date;
 }
 
@@ -29,10 +30,11 @@ interface ChatSession {
   updated_at: string;
 }
 
-interface ImagePayload {
+interface FilePayload {
   data: string; // base64
   mimeType: string;
   previewUrl: string;
+  fileName: string;
 }
 
 const QUICK_ACTIONS = [
@@ -96,9 +98,15 @@ function AgentContent() {
   const [history, setHistory] = useState<any[]>([]);
   const [copiedId, setCopiedId] = useState<string | null>(null);
 
-  // Vision OCR & Voice states
-  const [selectedImage, setSelectedImage] = useState<ImagePayload | null>(null);
+  // Vision OCR, File & Voice states
+  const [selectedFile, setSelectedFile] = useState<FilePayload | null>(null);
   const [isListening, setIsListening] = useState(false);
+
+  // Live Camera Modal states
+  const [showCameraModal, setShowCameraModal] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const mediaStreamRef = useRef<MediaStream | null>(null);
 
   const scrollRef = useRef<HTMLDivElement>(null);
   const inputRef = useRef<HTMLInputElement>(null);
@@ -180,6 +188,15 @@ function AgentContent() {
     }
   }, [messages, isTyping]);
 
+  // Clean up live camera stream on unmount
+  useEffect(() => {
+    return () => {
+      if (mediaStreamRef.current) {
+        mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, []);
+
   async function fetchSessions(uid: string, autoSelectLatest = false) {
     try {
       const { data: storedSessions } = await supabase
@@ -237,7 +254,7 @@ function AgentContent() {
     setActiveSessionId(null);
     setMessages([]);
     setHistory([]);
-    setSelectedImage(null);
+    setSelectedFile(null);
     if (typeof window !== 'undefined' && window.innerWidth < 1024) {
       setShowHistory(false);
     }
@@ -324,21 +341,72 @@ function AgentContent() {
     }
   }
 
-  // Handle Image File Selection for Receipt OCR
-  function handleImageSelect(e: React.ChangeEvent<HTMLInputElement>) {
+  // Open Live Camera Modal
+  async function openLiveCamera() {
+    setCameraError(null);
+    setShowCameraModal(true);
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({
+        video: { facingMode: 'environment' }
+      });
+      mediaStreamRef.current = stream;
+      if (videoRef.current) {
+        videoRef.current.srcObject = stream;
+      }
+    } catch (err: any) {
+      console.warn('Camera access error:', err);
+      setCameraError('Camera access permission denied or camera not found.');
+    }
+  }
+
+  // Close Live Camera
+  function closeLiveCamera() {
+    if (mediaStreamRef.current) {
+      mediaStreamRef.current.getTracks().forEach(track => track.stop());
+      mediaStreamRef.current = null;
+    }
+    setShowCameraModal(false);
+    setCameraError(null);
+  }
+
+  // Capture Photo from Live Camera
+  function capturePhotoFromCamera() {
+    if (!videoRef.current) return;
+    const video = videoRef.current;
+    const canvas = document.createElement('canvas');
+    canvas.width = video.videoWidth || 640;
+    canvas.height = video.videoHeight || 480;
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+      const dataUrl = canvas.toDataURL('image/jpeg');
+      const base64Data = dataUrl.split(',')[1];
+      setSelectedFile({
+        data: base64Data,
+        mimeType: 'image/jpeg',
+        previewUrl: dataUrl,
+        fileName: 'Live Camera Capture.jpg',
+      });
+    }
+    closeLiveCamera();
+  }
+
+  // Handle File Selection (Photo or PDF)
+  function handleFileSelect(e: React.ChangeEvent<HTMLInputElement>) {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    const mimeType = file.type || 'image/jpeg';
+    const mimeType = file.type || (file.name.endsWith('.pdf') ? 'application/pdf' : 'image/jpeg');
     const reader = new FileReader();
 
     reader.onloadend = () => {
       const result = reader.result as string;
       const base64Data = result.split(',')[1];
-      setSelectedImage({
+      setSelectedFile({
         data: base64Data,
         mimeType,
-        previewUrl: result,
+        previewUrl: mimeType.startsWith('image/') ? result : '',
+        fileName: file.name,
       });
     };
     reader.readAsDataURL(file);
@@ -378,7 +446,7 @@ function AgentContent() {
 
   async function send(text?: string) {
     const msg = text || input;
-    if ((!msg.trim() && !selectedImage) || isTyping) return;
+    if ((!msg.trim() && !selectedFile) || isTyping) return;
 
     if (!apiKey) {
       setMessages(prev => [...prev, {
@@ -390,23 +458,25 @@ function AgentContent() {
       return;
     }
 
-    const userMessageText = selectedImage
-      ? (msg ? `[Receipt Uploaded] ${msg}` : '📷 Scanning uploaded receipt image...')
+    const isPdf = selectedFile?.mimeType === 'application/pdf';
+    const userMessageText = selectedFile
+      ? (msg ? `[Attached: ${selectedFile.fileName}] ${msg}` : `📷 Analyzing ${selectedFile.fileName}...`)
       : msg;
 
     const userMessage: Message = {
       id: Date.now().toString(),
       text: userMessageText,
       isUser: true,
-      imageUrl: selectedImage?.previewUrl,
+      imageUrl: !isPdf ? selectedFile?.previewUrl : undefined,
+      fileName: selectedFile?.fileName,
       timestamp: new Date(),
     };
 
-    const imgPayload = selectedImage ? { data: selectedImage.data, mimeType: selectedImage.mimeType } : undefined;
+    const filePayload = selectedFile ? { data: selectedFile.data, mimeType: selectedFile.mimeType } : undefined;
 
     setMessages(prev => [...prev, userMessage]);
     setInput('');
-    setSelectedImage(null);
+    setSelectedFile(null);
     setIsTyping(true);
 
     try {
@@ -420,7 +490,7 @@ function AgentContent() {
           apiKey,
           provider,
           sessionId: activeSessionId,
-          image: imgPayload,
+          image: filePayload,
         }),
       });
 
@@ -484,14 +554,61 @@ function AgentContent() {
     <AppShell>
       <div className="flex h-[calc(100svh-5rem)] md:h-screen overflow-hidden bg-alabaster relative">
 
-        {/* Hidden File Input for Receipt Scanner */}
+        {/* Hidden File Input for PDF / Photo Selection */}
         <input
           type="file"
           ref={fileInputRef}
-          accept="image/*"
+          accept="image/*,application/pdf"
           className="hidden"
-          onChange={handleImageSelect}
+          onChange={handleFileSelect}
         />
+
+        {/* Live Camera Modal */}
+        {showCameraModal && (
+          <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-md flex items-center justify-center p-4">
+            <div className="bg-white dark:bg-stone-900 rounded-3xl p-5 max-w-md w-full shadow-2xl relative flex flex-col items-center">
+              <div className="w-full flex justify-between items-center mb-4">
+                <h3 className="font-serif text-lg font-semibold text-forest dark:text-white flex items-center gap-2">
+                  <Camera size={18} className="text-sage" />
+                  <span>Live Camera Capture</span>
+                </h3>
+                <button onClick={closeLiveCamera} className="w-8 h-8 rounded-full bg-cream flex items-center justify-center text-text-secondary hover:text-terracotta">
+                  <X size={16} />
+                </button>
+              </div>
+
+              {cameraError ? (
+                <div className="py-12 px-4 text-center">
+                  <p className="text-sm text-terracotta mb-4">{cameraError}</p>
+                  <button onClick={openLiveCamera} className="px-4 py-2 bg-sage text-white rounded-full text-xs font-medium">Try Again</button>
+                </div>
+              ) : (
+                <div className="relative w-full aspect-video rounded-2xl overflow-hidden bg-black mb-5 shadow-inner border border-stone/30">
+                  <video ref={videoRef} autoPlay playsInline className="w-full h-full object-cover" />
+                  <div className="absolute inset-0 border-2 border-white/20 rounded-2xl pointer-events-none" />
+                </div>
+              )}
+
+              {!cameraError && (
+                <div className="flex items-center gap-3">
+                  <button
+                    onClick={capturePhotoFromCamera}
+                    className="flex items-center gap-2 px-6 py-3 bg-forest text-white rounded-full text-sm font-medium hover:bg-forest/90 transition-all shadow-botanical active:scale-95"
+                  >
+                    <Camera size={18} />
+                    <span>Snap Photo</span>
+                  </button>
+                  <button
+                    onClick={closeLiveCamera}
+                    className="px-5 py-3 bg-cream text-text-secondary rounded-full text-sm font-medium hover:bg-stone/20"
+                  >
+                    Cancel
+                  </button>
+                </div>
+              )}
+            </div>
+          </div>
+        )}
 
         {/* Backdrop for mobile drawer */}
         {showHistory && (
@@ -597,12 +714,12 @@ function AgentContent() {
 
             <div className="flex items-center gap-2">
               <button
-                onClick={() => fileInputRef.current?.click()}
+                onClick={openLiveCamera}
                 className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full text-xs font-medium bg-sage/10 text-sage hover:bg-sage/20 transition-colors"
-                title="Upload receipt for AI OCR"
+                title="Live Camera Photo"
               >
                 <Camera size={14} />
-                <span>Scan Receipt</span>
+                <span>Live Camera</span>
               </button>
               <button
                 onClick={startNewChat}
@@ -634,7 +751,7 @@ function AgentContent() {
                 </div>
                 <h2 className="font-serif text-xl sm:text-2xl md:text-3xl font-semibold text-forest mb-2 sm:mb-3">Ask me anything</h2>
                 <p className="text-text-secondary max-w-sm sm:max-w-md leading-relaxed mb-6 sm:mb-10 text-sm sm:text-base px-2">
-                  Manage expenses, tasks, notes, or scan receipts with AI. Just ask in plain English or Hindi.
+                  Manage expenses, tasks, notes, or scan PDFs & receipts with AI. Just ask in plain English or Hindi.
                 </p>
 
                 {/* Quick Actions */}
@@ -687,7 +804,13 @@ function AgentContent() {
                     <div className={`px-3.5 sm:px-5 py-2.5 sm:py-3.5 rounded-2xl ${m.isUser ? 'bg-forest text-white rounded-br-md' : 'bg-white border border-stone/50 text-forest rounded-bl-md'}`}>
                       {m.imageUrl && (
                         <div className="mb-2 rounded-lg overflow-hidden border border-white/20 max-w-[200px]">
-                          <img src={m.imageUrl} alt="Uploaded receipt" className="w-full h-auto object-cover" />
+                          <img src={m.imageUrl} alt="Uploaded attachment" className="w-full h-auto object-cover" />
+                        </div>
+                      )}
+                      {m.fileName && !m.imageUrl && (
+                        <div className="mb-2 flex items-center gap-2 p-2 rounded-lg bg-white/10 border border-white/20">
+                          <FileText size={16} className="text-amber-300" />
+                          <span className="text-xs font-medium truncate">{m.fileName}</span>
                         </div>
                       )}
                       {m.isUser ? (
@@ -723,17 +846,25 @@ function AgentContent() {
             )}
           </div>
 
-          {/* Image Preview Bar if image is selected */}
-          {selectedImage && (
-            <div className="flex-none px-3 sm:px-6 py-2 bg-cream/80 border-t border-stone/30 flex items-center justify-between">
+          {/* Attachment Preview Bar if file/image is selected */}
+          {selectedFile && (
+            <div className="flex-none px-3 sm:px-6 py-2 bg-cream/90 border-t border-stone/30 flex items-center justify-between">
               <div className="flex items-center gap-2.5 min-w-0">
-                <img src={selectedImage.previewUrl} alt="Receipt preview" className="w-10 h-10 rounded-lg object-cover border border-stone/50" />
+                {selectedFile.mimeType.startsWith('image/') ? (
+                  <img src={selectedFile.previewUrl} alt="Attachment preview" className="w-10 h-10 rounded-lg object-cover border border-stone/50" />
+                ) : (
+                  <div className="w-10 h-10 rounded-lg bg-amber-500/10 border border-amber-500/30 flex items-center justify-center text-amber-600">
+                    <FileText size={20} />
+                  </div>
+                )}
                 <div className="min-w-0">
-                  <p className="text-xs font-medium text-forest truncate">Receipt attached</p>
-                  <p className="text-[10px] text-mushroom">Ready for Gemini AI OCR scan</p>
+                  <p className="text-xs font-medium text-forest truncate">{selectedFile.fileName}</p>
+                  <p className="text-[10px] text-mushroom">
+                    {selectedFile.mimeType === 'application/pdf' ? 'PDF Document ready for AI analysis' : 'Image ready for AI OCR scan'}
+                  </p>
                 </div>
               </div>
-              <button onClick={() => setSelectedImage(null)} className="p-1 rounded-full text-mushroom hover:text-terracotta">
+              <button onClick={() => setSelectedFile(null)} className="p-1 rounded-full text-mushroom hover:text-terracotta">
                 <X size={16} />
               </button>
             </div>
@@ -759,20 +890,33 @@ function AgentContent() {
 
           {/* Input Box */}
           <div className="flex-none px-3 sm:px-6 py-3 sm:py-4 border-t border-stone/50 bg-white safe-area-bottom">
-            <div className="flex gap-2 sm:gap-3 items-end">
+            <div className="flex gap-1.5 sm:gap-2 items-end">
+
+              {/* 📷 Live Camera Button */}
               <button
                 type="button"
-                onClick={() => fileInputRef.current?.click()}
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-sage hover:border-sage transition-colors flex-shrink-0"
-                title="Scan Receipt / Upload Image"
+                onClick={openLiveCamera}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-sage hover:border-sage transition-colors flex-shrink-0"
+                title="Take Live Camera Photo"
               >
                 <Camera size={18} strokeWidth={1.5} />
               </button>
 
+              {/* 📎 File Attachment Button (PDF or Photo) */}
+              <button
+                type="button"
+                onClick={() => fileInputRef.current?.click()}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-cream border border-stone/50 flex items-center justify-center text-text-secondary hover:text-forest hover:border-sage transition-colors flex-shrink-0"
+                title="Attach Photo or PDF Document"
+              >
+                <Paperclip size={18} strokeWidth={1.5} />
+              </button>
+
+              {/* 🎙️ Voice Input Button */}
               <button
                 type="button"
                 onClick={toggleVoiceInput}
-                className={`w-11 h-11 sm:w-12 sm:h-12 rounded-full border flex items-center justify-center transition-all flex-shrink-0 ${
+                className={`w-10 h-10 sm:w-11 sm:h-11 rounded-full border flex items-center justify-center transition-all flex-shrink-0 ${
                   isListening
                     ? 'bg-terracotta text-white border-terracotta animate-pulse'
                     : 'bg-cream border-stone/50 text-text-secondary hover:text-forest'
@@ -788,16 +932,16 @@ function AgentContent() {
                 value={input}
                 onChange={e => setInput(e.target.value)}
                 onKeyDown={e => e.key === 'Enter' && !e.shiftKey && (e.preventDefault(), send())}
-                placeholder={isListening ? 'Listening to your voice...' : 'Ask Cortex or scan receipt...'}
-                className="flex-1 min-w-0 px-4 sm:px-5 py-3 sm:py-3.5 bg-cream border border-stone/50 rounded-full text-sm text-forest placeholder:text-mushroom focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30 transition-all duration-300"
+                placeholder={isListening ? 'Listening...' : 'Ask Cortex or attach PDF/Photo...'}
+                className="flex-1 min-w-0 px-4 py-2.5 sm:py-3 bg-cream border border-stone/50 rounded-full text-sm text-forest placeholder:text-mushroom focus:outline-none focus:border-sage focus:ring-1 focus:ring-sage/30 transition-all duration-300"
                 disabled={!apiKey}
                 autoComplete="off"
               />
 
               <button
                 onClick={() => send()}
-                disabled={!apiKey || isTyping || (!input.trim() && !selectedImage)}
-                className="w-11 h-11 sm:w-12 sm:h-12 rounded-full bg-forest text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 active:scale-95 transition-all duration-200"
+                disabled={!apiKey || isTyping || (!input.trim() && !selectedFile)}
+                className="w-10 h-10 sm:w-11 sm:h-11 rounded-full bg-forest text-white flex items-center justify-center flex-shrink-0 disabled:opacity-40 active:scale-95 transition-all duration-200"
               >
                 <Send size={17} strokeWidth={1.5} />
               </button>
