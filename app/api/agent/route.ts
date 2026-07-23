@@ -141,10 +141,10 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
       let query = supabase.from('expenses').select('*').eq('user_id', userId).order('date', { ascending: false });
       if (args.category) query = query.eq('category', args.category);
       if (args.limit) query = query.limit(args.limit);
-      else query = query.limit(10);
+      else query = query.limit(50);
       const { data, error } = await query;
       if (error) throw new Error(error.message);
-      return { currency: currencySymbol, expenses: data };
+      return { currency: currencySymbol, count: data?.length || 0, expenses: data };
     }
     case 'addTask': {
       const { error } = await supabase.from('tasks').insert({
@@ -184,21 +184,48 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
       return { success: true, message: `Reminder "${args.title}" set` };
     }
     case 'getExpenseSummary': {
-      const now = new Date();
-      let startDate: Date;
-      switch (args.period) {
-        case 'today': startDate = new Date(now.getFullYear(), now.getMonth(), now.getDate()); break;
-        case 'week': startDate = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000); break;
-        case 'year': startDate = new Date(now.getFullYear(), 0, 1); break;
-        default: startDate = new Date(now.getFullYear(), now.getMonth(), 1);
-      }
-      const { data, error } = await supabase.from('expenses').select('title, amount, category, date').eq('user_id', userId)
-        .gte('date', startDate.toISOString());
+      const { data: allData, error } = await supabase
+        .from('expenses')
+        .select('title, amount, category, date, note')
+        .eq('user_id', userId)
+        .order('date', { ascending: false });
+
       if (error) throw new Error(error.message);
+
+      const now = new Date();
+      const currentMonth = now.getMonth();
+      const currentYear = now.getFullYear();
+      const todayStr = now.toISOString().split('T')[0];
+      const sevenDaysAgo = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000);
+
+      const expensesList = allData || [];
+      let filtered = expensesList;
+
+      const targetPeriod = args.period || 'month';
+      if (targetPeriod === 'today') {
+        filtered = expensesList.filter((e: any) => e.date?.startsWith(todayStr));
+      } else if (targetPeriod === 'week') {
+        filtered = expensesList.filter((e: any) => new Date(e.date) >= sevenDaysAgo);
+      } else if (targetPeriod === 'year') {
+        filtered = expensesList.filter((e: any) => new Date(e.date).getFullYear() === currentYear);
+      } else if (targetPeriod === 'month') {
+        filtered = expensesList.filter((e: any) => {
+          const d = new Date(e.date);
+          return d.getMonth() === currentMonth && d.getFullYear() === currentYear;
+        });
+      }
+
+      // If filtered period has no entries but all-time exists, fallback to all-time so AI can analyze available data
+      if (filtered.length === 0 && expensesList.length > 0) {
+        filtered = expensesList;
+      }
 
       const byCat: Record<string, number> = {};
       let total = 0;
-      (data || []).forEach((e: any) => { byCat[e.category] = (byCat[e.category] || 0) + e.amount; total += e.amount; });
+      filtered.forEach((e: any) => {
+        byCat[e.category] = (byCat[e.category] || 0) + e.amount;
+        total += e.amount;
+      });
 
       const budgetLimit = userSettings?.budget_limit || 0;
       const percentages: Record<string, string> = {};
@@ -216,15 +243,20 @@ async function executeTool(name: string, args: any, userId: string, supabase: an
       }
 
       return {
-        period: args.period || 'month',
+        period: targetPeriod,
         currency: currencySymbol,
-        total,
-        count: data?.length || 0,
+        totalSpent: total,
+        transactionCount: filtered.length,
         budgetLimit,
         budgetStatus,
         byCategory: byCat,
         categoryBreakdown: percentages,
-        sampleTransactions: (data || []).slice(0, 5).map((e: any) => `${e.title}: ${currencySymbol}${e.amount} (${e.category})`),
+        allTransactions: filtered.map((e: any) => ({
+          title: e.title,
+          amount: `${currencySymbol}${e.amount}`,
+          category: e.category,
+          date: e.date?.split('T')?.[0] || e.date,
+        })),
       };
     }
     default:
